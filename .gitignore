@@ -1,0 +1,73 @@
+# ==========================
+# GENERAL
+# ==========================
+.DS_Store
+Thumbs.db
+
+# ==========================
+# INTELLIJ IDEA
+# ==========================
+.idea/
+*.iml
+out/
+
+# ==========================
+# SPRING BOOT / MAVEN (BACK)
+# ==========================
+
+# Maven target
+back/target/
+target/
+
+# Logs
+*.log
+logs/
+
+# Maven wrapper jar (opcional)
+!.mvn/wrapper/maven-wrapper.jar
+
+# Application secrets
+back/src/main/resources/application-local.properties
+back/src/main/resources/application-prod.properties
+back/src/main/resources/application-secret.properties
+
+# Env files
+.env
+
+# ==========================
+# ANGULAR / NODE (FRONT)
+# ==========================
+
+# Node modules
+front/node_modules/
+node_modules/
+
+# Angular build
+front/dist/
+dist/
+
+# Angular cache
+front/.angular/
+.angular/
+
+# Coverage
+front/coverage/
+coverage/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files sensibles (si manejas secretos)
+front/src/environments/environment.prod.ts
+
+# ==========================
+# VS CODE
+# ==========================
+.vscode/
+
+# ==========================
+# OS FILES
+# ==========================
+desktop.ini
