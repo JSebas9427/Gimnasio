@@ -1,8 +1,15 @@
 <div class="page-header">
   <h2>Clientes</h2>
-  <button mat-raised-button color="primary" (click)="abrirFormulario()">
-    <mat-icon>add</mat-icon> Nuevo Cliente
-  </button>
+  <div class="header-actions">
+    <button mat-stroked-button color="primary" (click)="abrirFormulario(undefined!)"
+            matTooltip="Solo datos del cliente, sin plan">
+      <mat-icon>person_add</mat-icon> Solo Cliente
+    </button>
+    <button mat-raised-button color="primary" (click)="abrirRegistroCompleto()"
+            matTooltip="Registrar cliente y asignar plan en un solo paso">
+      <mat-icon>assignment_turned_in</mat-icon> Cliente + Plan
+    </button>
+  </div>
 </div>
 
 <mat-card>
@@ -49,6 +56,7 @@
       <tr mat-header-row *matHeaderRowDef="columnas"></tr>
       <tr mat-row *matRowDef="let row; columns: columnas;"></tr>
     </table>
-    <p *ngIf="!cargando && clientes.length === 0" class="empty">No hay clientes registrados.</p>
+
+    <p *ngIf="clientes.length === 0" class="empty">No hay clientes registrados.</p>
   </mat-card-content>
 </mat-card>

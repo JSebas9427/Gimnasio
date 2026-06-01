@@ -4,6 +4,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ClienteService } from '../../../core/services/cliente.service';
 import { Cliente } from '../../../core/models/models';
 import { FormClienteComponent } from '../form-cliente/form-cliente.component';
+import { RegistroCompletoComponent } from '../registro-completo/registro-completo.component';
 
 @Component({
   selector: 'app-lista-clientes',
@@ -14,7 +15,6 @@ export class ListaClientesComponent implements OnInit {
 
   clientes: Cliente[] = [];
   columnas = ['cc', 'nombre', 'telefono', 'correo', 'fechaRegistro', 'acciones'];
-  cargando = false;
 
   constructor(
     private clienteService: ClienteService,
@@ -25,18 +25,22 @@ export class ListaClientesComponent implements OnInit {
   ngOnInit(): void { this.cargarClientes(); }
 
   cargarClientes(): void {
-    this.cargando = true;
     this.clienteService.getAll().subscribe({
-      next: (data) => { this.clientes = data; this.cargando = false; },
-      error: () => { this.mostrarMensaje('Error al cargar clientes'); this.cargando = false; }
+      next: (data) => this.clientes = data,
+      error: () => this.mostrarMensaje('Error al cargar clientes')
     });
   }
 
-  abrirFormulario(cliente?: Cliente): void {
-    const ref = this.dialog.open(FormClienteComponent, {
-      width: '540px', data: cliente ?? null
-    });
-    ref.afterClosed().subscribe(r => { if (r) this.cargarClientes(); });
+  // Registro completo: cliente + factura en un solo formulario
+  abrirRegistroCompleto(): void {
+    this.dialog.open(RegistroCompletoComponent, { width: '560px', disableClose: true })
+      .afterClosed().subscribe(r => { if (r) this.cargarClientes(); });
+  }
+
+  // Solo editar datos del cliente existente
+  abrirFormulario(cliente: Cliente): void {
+    this.dialog.open(FormClienteComponent, { width: '540px', data: cliente })
+      .afterClosed().subscribe(r => { if (r) this.cargarClientes(); });
   }
 
   eliminar(cliente: Cliente): void {
