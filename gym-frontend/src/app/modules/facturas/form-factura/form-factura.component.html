@@ -1,0 +1,81 @@
+<h2 mat-dialog-title>Nueva Factura</h2>
+
+<mat-dialog-content [formGroup]="form">
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Tipo de factura</mat-label>
+    <mat-select formControlName="tipo">
+      <mat-option value="MENSUALIDAD">Mensualidad</mat-option>
+      <mat-option value="DIARIO">Entreno Diario</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Vendedor</mat-label>
+    <mat-select formControlName="ccVendedor">
+      <mat-option *ngFor="let v of vendedores" [value]="v.cc">
+        {{ v.nombre1 }} {{ v.apellido1 }}
+      </mat-option>
+    </mat-select>
+    <mat-error>El vendedor es obligatorio</mat-error>
+  </mat-form-field>
+
+  <!-- MENSUALIDAD -->
+  <ng-container *ngIf="esMensualidad">
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>CC del Cliente</mat-label>
+      <input matInput type="number" formControlName="ccCliente" placeholder="Número de cédula">
+      <mat-error>La CC del cliente es obligatoria</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Plan</mat-label>
+      <mat-select formControlName="idPlan">
+        <mat-option *ngFor="let p of planes" [value]="p.idPlan">
+          {{ p.nombre }} — {{ p.precio | currency:'COP':'code':'1.0-0' }} ({{ p.duracion }} días)
+        </mat-option>
+      </mat-select>
+      <mat-error>El plan es obligatorio</mat-error>
+    </mat-form-field>
+
+    <div class="two-col">
+      <mat-form-field appearance="outline">
+        <mat-label>Fecha inicio</mat-label>
+        <input matInput type="date" formControlName="fechaInicio">
+        <mat-hint>Por defecto: hoy</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Fecha fin</mat-label>
+        <input matInput type="date" formControlName="fechaFin">
+        <mat-hint>Se recalcula con el plan</mat-hint>
+      </mat-form-field>
+    </div>
+
+  </ng-container>
+
+  <!-- DIARIO -->
+  <ng-container *ngIf="!esMensualidad">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Valor (COP)</mat-label>
+      <input matInput type="number" formControlName="valorPagado" placeholder="15000">
+      <mat-error>El valor es obligatorio</mat-error>
+    </mat-form-field>
+  </ng-container>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Método de pago</mat-label>
+    <mat-select formControlName="metodoPago">
+      <mat-option *ngFor="let m of metodosPago" [value]="m">{{ m }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancelar()">Cancelar</button>
+  <button mat-raised-button color="primary" (click)="guardar()" [disabled]="form.invalid">
+    Registrar Factura
+  </button>
+</mat-dialog-actions>

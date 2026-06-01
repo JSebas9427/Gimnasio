@@ -1,0 +1,9 @@
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  h2 { margin: 0; font-size: 1.5rem; }
+}
+.full-width { width: 100%; }
+.empty { text-align: center; padding: 24px; color: #888; }

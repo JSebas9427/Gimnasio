@@ -1,0 +1,23 @@
+<div class="page-header">
+  <h2>Vendedores</h2>
+  <button mat-raised-button color="primary" (click)="abrir()"><mat-icon>add</mat-icon> Nuevo Vendedor</button>
+</div>
+<mat-card>
+  <mat-card-content>
+    <table mat-table [dataSource]="vendedores" class="full-width">
+      <ng-container matColumnDef="cc"><th mat-header-cell *matHeaderCellDef>CC</th><td mat-cell *matCellDef="let v">{{v.cc}}</td></ng-container>
+      <ng-container matColumnDef="nombre"><th mat-header-cell *matHeaderCellDef>Nombre</th><td mat-cell *matCellDef="let v">{{v.nombre1}} {{v.apellido1}}</td></ng-container>
+      <ng-container matColumnDef="cargo"><th mat-header-cell *matHeaderCellDef>Cargo</th><td mat-cell *matCellDef="let v">{{v.cargo||'—'}}</td></ng-container>
+      <ng-container matColumnDef="telefono"><th mat-header-cell *matHeaderCellDef>Teléfono</th><td mat-cell *matCellDef="let v">{{v.telefono||'—'}}</td></ng-container>
+      <ng-container matColumnDef="correo"><th mat-header-cell *matHeaderCellDef>Correo</th><td mat-cell *matCellDef="let v">{{v.correo||'—'}}</td></ng-container>
+      <ng-container matColumnDef="acciones"><th mat-header-cell *matHeaderCellDef>Acciones</th>
+        <td mat-cell *matCellDef="let v">
+          <button mat-icon-button color="primary" (click)="abrir(v)"><mat-icon>edit</mat-icon></button>
+          <button mat-icon-button color="warn" (click)="eliminar(v)"><mat-icon>delete</mat-icon></button>
+        </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+      <tr mat-row *matRowDef="let row; columns: columnas;"></tr>
+    </table>
+  </mat-card-content>
+</mat-card>

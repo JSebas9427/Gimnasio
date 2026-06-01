@@ -1,0 +1,21 @@
+<h2 mat-dialog-title>{{ esEdicion ? 'Editar' : 'Nuevo' }} Vendedor</h2>
+<mat-dialog-content [formGroup]="form">
+  <mat-form-field appearance="outline" class="full-width"><mat-label>CC</mat-label><input matInput type="number" formControlName="cc"></mat-form-field>
+  <div class="two-col">
+    <mat-form-field appearance="outline"><mat-label>Primer Nombre</mat-label><input matInput formControlName="nombre1"></mat-form-field>
+    <mat-form-field appearance="outline"><mat-label>Segundo Nombre</mat-label><input matInput formControlName="nombre2"></mat-form-field>
+  </div>
+  <div class="two-col">
+    <mat-form-field appearance="outline"><mat-label>Primer Apellido</mat-label><input matInput formControlName="apellido1"></mat-form-field>
+    <mat-form-field appearance="outline"><mat-label>Segundo Apellido</mat-label><input matInput formControlName="apellido2"></mat-form-field>
+  </div>
+  <div class="two-col">
+    <mat-form-field appearance="outline"><mat-label>Cargo</mat-label><input matInput formControlName="cargo"></mat-form-field>
+    <mat-form-field appearance="outline"><mat-label>Teléfono</mat-label><input matInput formControlName="telefono"></mat-form-field>
+  </div>
+  <mat-form-field appearance="outline" class="full-width"><mat-label>Correo</mat-label><input matInput formControlName="correo"></mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancelar()">Cancelar</button>
+  <button mat-raised-button color="primary" (click)="guardar()" [disabled]="form.invalid">{{ esEdicion ? 'Actualizar' : 'Crear' }}</button>
+</mat-dialog-actions>

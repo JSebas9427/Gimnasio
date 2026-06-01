@@ -43,8 +43,8 @@ public class Cliente {
     private String telefono;
 
     @Email
-    @Size(max = 20)
-    @Column(name = "correo", length = 20)
+    @Size(max = 50)                         // ← ajustado a 50
+    @Column(name = "correo", length = 50)   // ← ajustado a 50
     private String correo;
 
     @PrePersist

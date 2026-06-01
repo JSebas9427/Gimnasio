@@ -1,5 +1,6 @@
 package com.gimnasio.controller;
 
+import com.gimnasio.dto.FacturaResponseDTO;
 import com.gimnasio.model.Factura;
 import com.gimnasio.model.enums.TipoFactura;
 import com.gimnasio.service.FacturaService;
@@ -17,29 +18,27 @@ public class FacturaController {
     private final FacturaService facturaService;
 
     @GetMapping
-    public ResponseEntity<List<Factura>> getAll() {
+    public ResponseEntity<List<FacturaResponseDTO>> getAll() {
         return ResponseEntity.ok(facturaService.findAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Factura> getById(@PathVariable Integer id) {
+    public ResponseEntity<FacturaResponseDTO> getById(@PathVariable Integer id) {
         return ResponseEntity.ok(facturaService.findById(id));
     }
 
-    // GET /v1/facturas/cliente/12345678
     @GetMapping("/cliente/{cc}")
-    public ResponseEntity<List<Factura>> getByCliente(@PathVariable Integer cc) {
+    public ResponseEntity<List<FacturaResponseDTO>> getByCliente(@PathVariable Integer cc) {
         return ResponseEntity.ok(facturaService.findByCliente(cc));
     }
 
-    // GET /v1/facturas/tipo/MENSUALIDAD  o  /tipo/DIARIO
     @GetMapping("/tipo/{tipo}")
-    public ResponseEntity<List<Factura>> getByTipo(@PathVariable TipoFactura tipo) {
+    public ResponseEntity<List<FacturaResponseDTO>> getByTipo(@PathVariable TipoFactura tipo) {
         return ResponseEntity.ok(facturaService.findByTipo(tipo));
     }
 
     @PostMapping
-    public ResponseEntity<Factura> create(@RequestBody Factura factura) {
+    public ResponseEntity<FacturaResponseDTO> create(@RequestBody Factura factura) {
         return ResponseEntity.status(HttpStatus.CREATED).body(facturaService.save(factura));
     }
 

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -20,18 +21,16 @@ public class Factura {
     @Column(name = "id_factura")
     private Integer idFactura;
 
-    // nullable → solo mensualidad tiene plan
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "plan_id", nullable = true)
     private Plan plan;
 
-    // nullable → entreno diario no requiere cliente identificado
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "cliente_cc", nullable = true)
     private Cliente cliente;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "cc_vendedor", nullable = false)
     private Vendedor vendedor;
 
@@ -39,10 +38,12 @@ public class Factura {
     @Column(name = "metodo_pago", length = 20)
     private String metodoPago;
 
+    @Column(name = "fecha_factura")
+    private LocalDate fechaFactura;
+
     @Column(name = "fecha_inicio")
     private LocalDate fechaInicio;
 
-    // nullable → solo mensualidad tiene fecha fin
     @Column(name = "fecha_fin")
     private LocalDate fechaFin;
 
@@ -51,6 +52,14 @@ public class Factura {
     @Column(name = "tipo", nullable = false)
     private TipoFactura tipo;
 
-    @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<DetalleFactura> detalles;
+    // EAGER para que los detalles siempre estén disponibles al serializar
+    @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<DetalleFactura> detalles = new ArrayList<>();
+
+    @PrePersist
+    public void prePersist() {
+        if (this.fechaFactura == null) {
+            this.fechaFactura = LocalDate.now();
+        }
+    }
 }
