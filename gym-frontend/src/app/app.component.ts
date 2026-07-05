@@ -27,9 +27,10 @@ export class AppComponent {
   sidenavOpen = true;
 
   menuItems = [
-    { label: 'Planes',     icon: 'fitness_center', route: '/planes'     },
-    { label: 'Clientes',   icon: 'people',          route: '/clientes'   },
-    { label: 'Vendedores', icon: 'badge',           route: '/vendedores' },
-    { label: 'Facturas',   icon: 'receipt_long',    route: '/facturas'   },
+    { label: 'Reportes',    icon: 'bar_chart',       route: '/reportes'   },
+    { label: 'Planes',      icon: 'fitness_center',  route: '/planes'     },
+    { label: 'Clientes',    icon: 'people',           route: '/clientes'   },
+    { label: 'Vendedores',  icon: 'badge',            route: '/vendedores' },
+    { label: 'Facturas',    icon: 'receipt_long',     route: '/facturas'   },
   ];
 }

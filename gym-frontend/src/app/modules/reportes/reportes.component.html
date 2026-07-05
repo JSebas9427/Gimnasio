@@ -1,0 +1,310 @@
+<div class="reportes-page">
+
+  <!-- ── Encabezado y filtros ─────────────────────────────────────────── -->
+  <div class="page-header">
+    <h2>Reportes financieros</h2>
+
+    <div class="filtros-wrap">
+
+      <!-- Botones rápidos -->
+      <div class="periodo-chips">
+        <button mat-stroked-button (click)="setPeriodo('hoy')">Hoy</button>
+        <button mat-stroked-button (click)="setPeriodo('semana')">Esta semana</button>
+        <button mat-stroked-button (click)="setPeriodo('mes')">Este mes</button>
+      </div>
+
+      <!-- Selector de mes -->
+      <mat-form-field appearance="outline" class="mes-field">
+        <mat-label>Seleccionar mes</mat-label>
+        <mat-select [(ngModel)]="mesSeleccionado" (ngModelChange)="seleccionarMes($event)"
+                    placeholder="Elige un mes">
+          <mat-option *ngFor="let m of meses" [value]="m.valor">
+            {{ m.label }} {{ anioActual }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Datepickers desde / hasta -->
+      <div class="filtro-fechas">
+        <mat-form-field appearance="outline" class="fecha-field">
+          <mat-label>Desde</mat-label>
+          <input matInput [matDatepicker]="pickerInicio" [(ngModel)]="fechaInicioDate">
+          <mat-datepicker-toggle matIconSuffix [for]="pickerInicio"></mat-datepicker-toggle>
+          <mat-datepicker #pickerInicio></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="fecha-field">
+          <mat-label>Hasta</mat-label>
+          <input matInput [matDatepicker]="pickerFin" [(ngModel)]="fechaFinDate">
+          <mat-datepicker-toggle matIconSuffix [for]="pickerFin"></mat-datepicker-toggle>
+          <mat-datepicker #pickerFin></mat-datepicker>
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" (click)="cargarTodo()" [disabled]="cargando">
+          <mat-icon>search</mat-icon> Consultar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Spinner -->
+  <div class="spinner-wrap" *ngIf="cargando">
+    <mat-spinner diameter="48"></mat-spinner>
+  </div>
+
+  <ng-container *ngIf="!cargando && resumen">
+
+    <!-- ── Cards de resumen ──────────────────────────────────────────────── -->
+    <div class="cards-grid">
+
+      <mat-card class="card-ingreso">
+        <mat-card-content>
+          <div class="card-icon"><mat-icon>attach_money</mat-icon></div>
+          <div class="card-data">
+            <span class="card-label">Total ingresos</span>
+            <span class="card-value">{{ formatCOP(resumen.totalIngresos) }}</span>
+            <span class="card-sub">{{ resumen.cantidadFacturas }} facturas</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="card-mens">
+        <mat-card-content>
+          <div class="card-icon"><mat-icon>card_membership</mat-icon></div>
+          <div class="card-data">
+            <span class="card-label">Mensualidades</span>
+            <span class="card-value">{{ formatCOP(resumen.totalMensualidades) }}</span>
+            <span class="card-sub">{{ resumen.cantidadMensualidades }} registros</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="card-diario">
+        <mat-card-content>
+          <div class="card-icon"><mat-icon>directions_run</mat-icon></div>
+          <div class="card-data">
+            <span class="card-label">Entrenos diarios</span>
+            <span class="card-value">{{ formatCOP(resumen.totalDiarios) }}</span>
+            <span class="card-sub">{{ resumen.cantidadDiarios }} registros</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="card-clientes">
+        <mat-card-content>
+          <div class="card-icon"><mat-icon>person_add</mat-icon></div>
+          <div class="card-data">
+            <span class="card-label">Clientes nuevos</span>
+            <span class="card-value big-num">{{ resumen.clientesNuevos }}</span>
+            <span class="card-sub">en el período</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+    </div>
+
+    <!-- ── Fila: Gráfica + Métodos de pago ──────────────────────────────── -->
+    <div class="fila-dos">
+
+      <mat-card class="card-grafica">
+        <mat-card-header><mat-card-title>Ingresos por día</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <div class="grafica-wrap" *ngIf="ingresosPorDia.length > 0; else sinDatos">
+            <svg width="100%" height="200" [attr.viewBox]="'0 0 ' + (48 + ingresosPorDia.length * 52) + ' 200'">
+              <line x1="40" y1="160" [attr.x2]="40 + ingresosPorDia.length * 52" y2="160" stroke="#e0e0e0" stroke-width="1"/>
+              <ng-container *ngFor="let dia of ingresosPorDia; let i = index">
+                <rect
+                  [attr.x]="48 + i * 52"
+                  [attr.y]="160 - getBarHeight(dia.totalDia)"
+                  width="38"
+                  [attr.height]="getBarHeight(dia.totalDia)"
+                  fill="#3f51b5" rx="3" opacity="0.85">
+                  <title>{{ formatCOP(dia.totalDia) }}</title>
+                </rect>
+                <text [attr.x]="67 + i * 52" y="176" text-anchor="middle" font-size="11" fill="#888">
+                  {{ getDayLabel(dia.fecha) }}
+                </text>
+                <text [attr.x]="67 + i * 52" [attr.y]="152 - getBarHeight(dia.totalDia)"
+                      text-anchor="middle" font-size="9" fill="#555">
+                  {{ dia.cantidadFacturas }}
+                </text>
+              </ng-container>
+            </svg>
+            <p class="grafica-hint">El número sobre cada barra indica cantidad de facturas</p>
+          </div>
+          <ng-template #sinDatos>
+            <div class="sin-datos"><mat-icon>bar_chart</mat-icon><span>Sin datos en el período</span></div>
+          </ng-template>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="card-metodos">
+        <mat-card-header><mat-card-title>Por método de pago</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <ng-container *ngIf="resumen.totalIngresos > 0; else sinMetodos">
+            <div class="metodo-fila" *ngIf="resumen.totalEfectivo > 0">
+              <div class="metodo-info"><mat-icon class="met-icon efectivo">payments</mat-icon><span>Efectivo</span></div>
+              <strong>{{ formatCOP(resumen.totalEfectivo) }}</strong>
+            </div>
+            <mat-divider *ngIf="resumen.totalEfectivo > 0 && resumen.totalTarjeta > 0"></mat-divider>
+            <div class="metodo-fila" *ngIf="resumen.totalTarjeta > 0">
+              <div class="metodo-info"><mat-icon class="met-icon tarjeta">credit_card</mat-icon><span>Tarjeta</span></div>
+              <strong>{{ formatCOP(resumen.totalTarjeta) }}</strong>
+            </div>
+            <mat-divider *ngIf="resumen.totalTarjeta > 0 && resumen.totalTransferencia > 0"></mat-divider>
+            <div class="metodo-fila" *ngIf="resumen.totalTransferencia > 0">
+              <div class="metodo-info"><mat-icon class="met-icon transferencia">swap_horiz</mat-icon><span>Transferencia</span></div>
+              <strong>{{ formatCOP(resumen.totalTransferencia) }}</strong>
+            </div>
+            <mat-divider *ngIf="resumen.totalTransferencia > 0 && resumen.totalNequi > 0"></mat-divider>
+            <div class="metodo-fila" *ngIf="resumen.totalNequi > 0">
+              <div class="metodo-info"><mat-icon class="met-icon nequi">phone_android</mat-icon><span>Nequi</span></div>
+              <strong>{{ formatCOP(resumen.totalNequi) }}</strong>
+            </div>
+          </ng-container>
+          <ng-template #sinMetodos>
+            <div class="sin-datos"><mat-icon>info</mat-icon><span>Sin ingresos en el período</span></div>
+          </ng-template>
+        </mat-card-content>
+      </mat-card>
+
+    </div>
+
+    <!-- ── Tabs ──────────────────────────────────────────────────────────── -->
+    <mat-card class="card-tablas">
+      <mat-tab-group animationDuration="200ms">
+
+        <!-- TAB 1: Facturas -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">receipt_long</mat-icon>
+            Facturas ({{ ingresos.length }})
+          </ng-template>
+          <div class="tab-content">
+            <table mat-table [dataSource]="ingresos" class="full-width" *ngIf="ingresos.length > 0; else tablaVacia">
+              <ng-container matColumnDef="idFactura">
+                <th mat-header-cell *matHeaderCellDef>#</th>
+                <td mat-cell *matCellDef="let f">{{ f.idFactura }}</td>
+              </ng-container>
+              <ng-container matColumnDef="fechaFactura">
+                <th mat-header-cell *matHeaderCellDef>Fecha</th>
+                <td mat-cell *matCellDef="let f">{{ f.fechaFactura | date:'dd/MM/yyyy' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="tipo">
+                <th mat-header-cell *matHeaderCellDef>Tipo</th>
+                <td mat-cell *matCellDef="let f">
+                  <span [class]="f.tipo === 'MENSUALIDAD' ? 'chip-mens' : 'chip-diario'">{{ f.tipo }}</span>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="clienteNombre">
+                <th mat-header-cell *matHeaderCellDef>Cliente</th>
+                <td mat-cell *matCellDef="let f">{{ f.clienteNombre || 'Anónimo' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="vendedorNombre">
+                <th mat-header-cell *matHeaderCellDef>Vendedor</th>
+                <td mat-cell *matCellDef="let f">{{ f.vendedorNombre }}</td>
+              </ng-container>
+              <ng-container matColumnDef="planNombre">
+                <th mat-header-cell *matHeaderCellDef>Plan</th>
+                <td mat-cell *matCellDef="let f">{{ f.planNombre || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="metodoPago">
+                <th mat-header-cell *matHeaderCellDef>Pago</th>
+                <td mat-cell *matCellDef="let f">{{ f.metodoPago || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="valor">
+                <th mat-header-cell *matHeaderCellDef class="text-right">Valor</th>
+                <td mat-cell *matCellDef="let f" class="text-right valor-cell">{{ formatCOP(f.valor) }}</td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="columnasIngresos"></tr>
+              <tr mat-row *matRowDef="let row; columns: columnasIngresos;"></tr>
+            </table>
+            <ng-template #tablaVacia>
+              <div class="sin-datos"><mat-icon>receipt</mat-icon><span>No hay facturas en el período</span></div>
+            </ng-template>
+
+            <!-- Subtotales -->
+            <div class="subtotales" *ngIf="ingresos.length > 0">
+              <div class="subtotal-fila">
+                <span>Mensualidades</span>
+                <strong>{{ formatCOP(totalMensualidadesTabla) }}</strong>
+              </div>
+              <div class="subtotal-fila">
+                <span>Diarios</span>
+                <strong>{{ formatCOP(totalDiariosTabla) }}</strong>
+              </div>
+              <div class="subtotal-fila total-final">
+                <span>TOTAL</span>
+                <strong>{{ formatCOP(totalTabla) }}</strong>
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- TAB 2: Clientes nuevos -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">people</mat-icon>
+            Clientes nuevos ({{ clientesNuevos.length }})
+          </ng-template>
+          <div class="tab-content">
+            <table mat-table [dataSource]="clientesNuevos" class="full-width" *ngIf="clientesNuevos.length > 0; else sinClientes">
+              <ng-container matColumnDef="cc">
+                <th mat-header-cell *matHeaderCellDef>CC</th>
+                <td mat-cell *matCellDef="let c">{{ c.cc }}</td>
+              </ng-container>
+              <ng-container matColumnDef="nombreCompleto">
+                <th mat-header-cell *matHeaderCellDef>Nombre</th>
+                <td mat-cell *matCellDef="let c">{{ c.nombreCompleto }}</td>
+              </ng-container>
+              <ng-container matColumnDef="telefono">
+                <th mat-header-cell *matHeaderCellDef>Teléfono</th>
+                <td mat-cell *matCellDef="let c">{{ c.telefono || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="correo">
+                <th mat-header-cell *matHeaderCellDef>Correo</th>
+                <td mat-cell *matCellDef="let c">{{ c.correo || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="planNombre">
+                <th mat-header-cell *matHeaderCellDef>Plan</th>
+                <td mat-cell *matCellDef="let c">
+                  <span *ngIf="c.planNombre" class="chip-mens">{{ c.planNombre }}</span>
+                  <span *ngIf="!c.planNombre" class="text-muted">Sin plan</span>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="fechaRegistro">
+                <th mat-header-cell *matHeaderCellDef>Registro</th>
+                <td mat-cell *matCellDef="let c">{{ c.fechaRegistro | date:'dd/MM/yyyy HH:mm' }}</td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="columnasClientes"></tr>
+              <tr mat-row *matRowDef="let row; columns: columnasClientes;"></tr>
+            </table>
+            <ng-template #sinClientes>
+              <div class="sin-datos"><mat-icon>person_off</mat-icon><span>No hay clientes nuevos en el período</span></div>
+            </ng-template>
+          </div>
+        </mat-tab>
+
+        <!-- TAB 3: Accesos (placeholder) -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">door_front</mat-icon>
+            Accesos
+          </ng-template>
+          <div class="tab-content">
+            <div class="acceso-placeholder">
+              <mat-icon>lock_clock</mat-icon>
+              <h3>Control de acceso — próximamente</h3>
+              <p>Esta sección mostrará el registro de entradas y salidas del torniquete una vez que se implemente el módulo de control de acceso.</p>
+              <p class="acceso-hint">Dispositivo detectado: <strong>Dahua Face Recognition Access Controller</strong> con lector de tarjetas y reconocimiento facial.</p>
+            </div>
+          </div>
+        </mat-tab>
+
+      </mat-tab-group>
+    </mat-card>
+
+  </ng-container>
+
+</div>
