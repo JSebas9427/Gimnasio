@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ClienteService } from '../../../core/services/cliente.service';
-import { Cliente } from '../../../core/models/models';
+import { ClienteService, ClienteResumenDTO } from '../../../core/services/cliente.service';
 import { FormClienteComponent } from '../form-cliente/form-cliente.component';
 import { RegistroCompletoComponent } from '../registro-completo/registro-completo.component';
 
@@ -13,45 +15,116 @@ import { RegistroCompletoComponent } from '../registro-completo/registro-complet
 })
 export class ListaClientesComponent implements OnInit {
 
-  clientes: Cliente[] = [];
-  columnas = ['cc', 'nombre', 'telefono', 'correo', 'fechaRegistro', 'acciones'];
+  clientes: ClienteResumenDTO[] = [];
+  cargando = false;
+
+  // Buscador
+  terminoBusqueda = '';
+  private busqueda$ = new Subject<string>();
+
+  // Filtro estado
+  estadoSeleccionado = 'TODOS';
+  estadosFiltro = [
+    { valor: 'TODOS',    label: 'Todos',       icon: 'people'           },
+    { valor: 'ACTIVO',   label: 'Activos',      icon: 'check_circle'    },
+    { valor: 'AGOTADO',  label: 'Agotados',     icon: 'warning'         },
+    { valor: 'SIN_PLAN', label: 'Sin plan',     icon: 'person_off'      },
+  ];
+
+  columnas = ['estado', 'cc', 'nombreCompleto', 'telefono', 'ultimoPlan', 'ultimaFechaFin', 'diasRestantes', 'acciones'];
 
   constructor(
     private clienteService: ClienteService,
+    private router: Router,
     private dialog: MatDialog,
     private snackBar: MatSnackBar
   ) {}
 
-  ngOnInit(): void { this.cargarClientes(); }
+  ngOnInit(): void {
+    this.cargar();
 
-  cargarClientes(): void {
-    this.clienteService.getAll().subscribe({
-      next: (data) => this.clientes = data,
-      error: () => this.mostrarMensaje('Error al cargar clientes')
+    // Búsqueda con debounce — espera 350ms después de que el usuario deja de escribir
+    this.busqueda$.pipe(
+      debounceTime(350),
+      distinctUntilChanged()
+    ).subscribe(() => this.cargar());
+  }
+
+  cargar(): void {
+    this.cargando = true;
+    this.clienteService.buscar(this.terminoBusqueda, this.estadoSeleccionado).subscribe({
+      next: d => { this.clientes = d; this.cargando = false; },
+      error: () => { this.snackBar.open('Error al cargar clientes', 'Cerrar', { duration: 3000 }); this.cargando = false; }
     });
   }
 
-  // Registro completo: cliente + factura en un solo formulario
+  onBusquedaChange(): void {
+    this.busqueda$.next(this.terminoBusqueda);
+  }
+
+  setEstado(estado: string): void {
+    this.estadoSeleccionado = estado;
+    this.cargar();
+  }
+
+  verPerfil(cc: number): void {
+    this.router.navigate(['/clientes', cc]);
+  }
+
   abrirRegistroCompleto(): void {
     this.dialog.open(RegistroCompletoComponent, { width: '560px', disableClose: true })
-      .afterClosed().subscribe(r => { if (r) this.cargarClientes(); });
+      .afterClosed().subscribe(r => { if (r) this.cargar(); });
   }
 
-  // Solo editar datos del cliente existente
-  abrirFormulario(cliente: Cliente): void {
-    this.dialog.open(FormClienteComponent, { width: '540px', data: cliente })
-      .afterClosed().subscribe(r => { if (r) this.cargarClientes(); });
+  abrirFormulario(cc?: number): void {
+    // Para editar necesitamos los datos completos del cliente
+    if (cc) {
+      this.clienteService.getById(cc).subscribe(cliente => {
+        this.dialog.open(FormClienteComponent, { width: '540px', data: cliente })
+          .afterClosed().subscribe(r => { if (r) this.cargar(); });
+      });
+    } else {
+      this.dialog.open(FormClienteComponent, { width: '540px', data: null })
+        .afterClosed().subscribe(r => { if (r) this.cargar(); });
+    }
   }
 
-  eliminar(cliente: Cliente): void {
-    if (!confirm(`¿Eliminar al cliente ${cliente.nombre1} ${cliente.apellido1}?`)) return;
+  eliminar(cliente: ClienteResumenDTO): void {
+    if (!confirm(`¿Eliminar a ${cliente.nombreCompleto}?`)) return;
     this.clienteService.delete(cliente.cc).subscribe({
-      next: () => { this.mostrarMensaje('Cliente eliminado'); this.cargarClientes(); },
-      error: () => this.mostrarMensaje('Error al eliminar')
+      next: () => { this.snackBar.open('Cliente eliminado', 'Cerrar', { duration: 3000 }); this.cargar(); },
+      error: () => this.snackBar.open('Error al eliminar', 'Cerrar', { duration: 3000 })
     });
   }
 
-  mostrarMensaje(msg: string): void {
-    this.snackBar.open(msg, 'Cerrar', { duration: 3000 });
+  // ── Helpers de estado ─────────────────────────────────────────────────
+  getEstadoClass(estado: string): string {
+    return { 'ACTIVO': 'badge-activo', 'AGOTADO': 'badge-agotado', 'SIN_PLAN': 'badge-sin-plan' }[estado] ?? '';
+  }
+
+  getEstadoLabel(estado: string): string {
+    return { 'ACTIVO': 'Activo', 'AGOTADO': 'Agotado', 'SIN_PLAN': 'Sin plan' }[estado] ?? estado;
+  }
+
+  getDiasLabel(dias: number | null): string {
+    if (dias === null) return '—';
+    if (dias > 0)  return `${dias}d restantes`;
+    if (dias === 0) return 'Vence hoy';
+    return `Venció hace ${Math.abs(dias)}d`;
+  }
+
+  getDiasClass(dias: number | null): string {
+    if (dias === null) return 'dias-null';
+    if (dias > 5)  return 'dias-ok';
+    if (dias >= 0) return 'dias-warning';
+    return 'dias-vencido';
+  }
+
+  get conteoEstados() {
+    return {
+      activos:   this.clientes.filter(c => c.estado === 'ACTIVO').length,
+      agotados:  this.clientes.filter(c => c.estado === 'AGOTADO').length,
+      sinPlan:   this.clientes.filter(c => c.estado === 'SIN_PLAN').length,
+    };
   }
 }

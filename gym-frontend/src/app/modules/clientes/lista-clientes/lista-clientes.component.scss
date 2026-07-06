@@ -1,16 +1,72 @@
+// ── Header ────────────────────────────────────────────────────────────────
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 16px;
-
   h2 { margin: 0; font-size: 1.5rem; }
+  .header-actions { display: flex; gap: 10px; }
+}
 
-  .header-actions {
-    display: flex;
-    gap: 10px;
+// ── Buscador ──────────────────────────────────────────────────────────────
+.buscador-wrap { margin-bottom: 12px; }
+.buscador-field {
+  width: 100%;
+  ::ng-deep .mat-mdc-form-field-subscript-wrapper { display: none; }
+}
+
+// ── Filtros de estado ─────────────────────────────────────────────────────
+.filtros-estado {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.filtro-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 20px; border: 1.5px solid #e0e0e0;
+  background: white; cursor: pointer; font-size: 0.85rem;
+  transition: all 0.15s;
+  mat-icon { font-size: 16px; height: 16px; width: 16px; }
+
+  &:hover { background: #f5f5f5; }
+
+  &.activo {
+    &.filtro-todos    { background: #3f51b5; color: white; border-color: #3f51b5; }
+    &.filtro-activo   { background: #2e7d32; color: white; border-color: #2e7d32; }
+    &.filtro-agotado  { background: #e65100; color: white; border-color: #e65100; }
+    &.filtro-sin_plan { background: #757575; color: white; border-color: #757575; }
   }
 }
 
+// ── Spinner ───────────────────────────────────────────────────────────────
+.spinner-wrap { display: flex; justify-content: center; padding: 40px; }
+
+// ── Tabla ─────────────────────────────────────────────────────────────────
 .full-width { width: 100%; }
-.empty { text-align: center; padding: 24px; color: #888; }
+
+.nombre-link {
+  background: none; border: none; cursor: pointer;
+  color: #3f51b5; font-size: inherit;
+  text-decoration: underline; text-underline-offset: 2px;
+  &:hover { color: #1a237e; }
+}
+
+// ── Badges de estado ──────────────────────────────────────────────────────
+.estado-badge {
+  padding: 3px 10px; border-radius: 12px;
+  font-size: 0.78rem; font-weight: 600;
+}
+.badge-activo   { background: #e8f5e9; color: #2e7d32; }
+.badge-agotado  { background: #fff3e0; color: #e65100; }
+.badge-sin-plan { background: #f5f5f5; color: #757575; }
+
+// ── Días restantes ────────────────────────────────────────────────────────
+.dias-ok      { color: #2e7d32; font-weight: 500; font-size: 0.85rem; }
+.dias-warning { color: #f57c00; font-weight: 600; font-size: 0.85rem; }
+.dias-vencido { color: #c62828; font-weight: 600; font-size: 0.85rem; }
+.dias-null    { color: #bbb; font-size: 0.85rem; }
+
+// ── Empty ─────────────────────────────────────────────────────────────────
+.empty {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 48px; color: #bbb;
+  mat-icon { font-size: 40px; height: 40px; width: 40px; }
+}

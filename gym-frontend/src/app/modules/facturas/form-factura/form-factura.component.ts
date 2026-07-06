@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, Optional } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { FacturaService } from '../../../core/services/factura.service';
 import { PlanService } from '../../../core/services/plan.service';
@@ -18,8 +18,8 @@ export class FormFacturaComponent implements OnInit {
   planes: Plan[] = [];
   vendedores: Vendedor[] = [];
   metodosPago = ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'NEQUI'];
+  ccPreseleccionado: number | null = null;
 
-  // Fechas por defecto
   private hoy = new Date();
   private en30 = new Date(this.hoy.getTime() + 30 * 24 * 60 * 60 * 1000);
 
@@ -29,17 +29,22 @@ export class FormFacturaComponent implements OnInit {
     private planService: PlanService,
     private vendedorService: VendedorService,
     private snackBar: MatSnackBar,
-    private ref: MatDialogRef<FormFacturaComponent>
+    private ref: MatDialogRef<FormFacturaComponent>,
+    @Optional() @Inject(MAT_DIALOG_DATA) public data: any
   ) {}
 
   ngOnInit(): void {
+    if (this.data?.ccPreseleccionado) {
+      this.ccPreseleccionado = this.data.ccPreseleccionado;
+    }
+
     this.planService.getAll().subscribe(d => this.planes = d);
     this.vendedorService.getAll().subscribe(d => this.vendedores = d);
 
     this.form = this.fb.group({
       tipo:        ['MENSUALIDAD', Validators.required],
       ccVendedor:  ['', Validators.required],
-      ccCliente:   [''],
+      ccCliente:   [this.ccPreseleccionado ?? ''],
       idPlan:      [''],
       metodoPago:  ['EFECTIVO'],
       fechaInicio: [this.toInputDate(this.hoy)],
@@ -48,7 +53,6 @@ export class FormFacturaComponent implements OnInit {
       valorPagado: ['']
     });
 
-    // Recalcular fecha_fin cuando cambia el plan
     this.form.get('idPlan')!.valueChanges.subscribe(idPlan => {
       const plan = this.planes.find(p => p.idPlan === idPlan);
       if (plan) {
@@ -58,7 +62,6 @@ export class FormFacturaComponent implements OnInit {
       }
     });
 
-    // Recalcular fecha_fin cuando cambia fecha_inicio
     this.form.get('fechaInicio')!.valueChanges.subscribe(fecha => {
       const idPlan = this.form.get('idPlan')!.value;
       const plan = this.planes.find(p => p.idPlan === idPlan);
@@ -69,7 +72,6 @@ export class FormFacturaComponent implements OnInit {
       }
     });
 
-    // Ajustar validadores según tipo
     this.form.get('tipo')!.valueChanges.subscribe(tipo => {
       const c = this.form.controls;
       if (tipo === 'MENSUALIDAD') {
@@ -87,10 +89,7 @@ export class FormFacturaComponent implements OnInit {
     this.form.get('tipo')!.updateValueAndValidity();
   }
 
-  get esMensualidad(): boolean {
-    return this.form.get('tipo')?.value === 'MENSUALIDAD';
-  }
-
+  get esMensualidad(): boolean { return this.form.get('tipo')?.value === 'MENSUALIDAD'; }
   get planSeleccionado(): Plan | undefined {
     return this.planes.find(p => p.idPlan === this.form.get('idPlan')?.value);
   }
@@ -101,10 +100,10 @@ export class FormFacturaComponent implements OnInit {
 
     const factura: any = {
       tipo: v.tipo,
-      vendedor:  { cc: Number(v.ccVendedor) },
-      metodoPago: v.metodoPago || null,
-      cliente: v.ccCliente ? { cc: Number(v.ccCliente) } : null,
-      plan:    v.idPlan    ? { idPlan: Number(v.idPlan) } : null,
+      vendedor:    { cc: Number(v.ccVendedor) },
+      metodoPago:  v.metodoPago || null,
+      cliente:     v.ccCliente ? { cc: Number(v.ccCliente) } : null,
+      plan:        v.idPlan    ? { idPlan: Number(v.idPlan) } : null,
       fechaInicio: v.fechaInicio || null,
       fechaFin:    v.fechaFin    || null,
       detalles: [{
@@ -123,15 +122,13 @@ export class FormFacturaComponent implements OnInit {
         this.ref.close(true);
       },
       error: (e) => {
-        const msg = e.error?.mensaje ?? 'Error al registrar la factura';
-        this.snackBar.open(msg, 'Cerrar', { duration: 4000 });
+        this.snackBar.open(e.error?.mensaje ?? 'Error al registrar', 'Cerrar', { duration: 4000 });
       }
     });
   }
 
   cancelar(): void { this.ref.close(false); }
 
-  // Convierte Date a string yyyy-MM-dd para input type="date"
   private toInputDate(date: Date): string {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');

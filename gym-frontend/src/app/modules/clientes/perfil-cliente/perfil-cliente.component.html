@@ -1,0 +1,136 @@
+<!-- Spinner -->
+<div class="spinner-wrap" *ngIf="cargando">
+  <mat-spinner diameter="48"></mat-spinner>
+</div>
+
+<ng-container *ngIf="!cargando && perfil">
+
+  <!-- ── Navegación ──────────────────────────────────────────────────────── -->
+  <div class="nav-back">
+    <button mat-button (click)="volver()">
+      <mat-icon>arrow_back</mat-icon> Volver a clientes
+    </button>
+  </div>
+
+  <!-- ── Cabecera del perfil ─────────────────────────────────────────────── -->
+  <div class="perfil-header">
+
+    <div class="avatar">
+      <mat-icon>person</mat-icon>
+    </div>
+
+    <div class="perfil-info">
+      <h2>{{ perfil.nombre1 }} {{ perfil.nombre2 }} {{ perfil.apellido1 }} {{ perfil.apellido2 }}</h2>
+      <span class="cc-label">CC {{ perfil.cc }}</span>
+      <div class="perfil-contacto">
+        <span *ngIf="perfil.telefono"><mat-icon>phone</mat-icon> {{ perfil.telefono }}</span>
+        <span *ngIf="perfil.correo"><mat-icon>email</mat-icon> {{ perfil.correo }}</span>
+        <span><mat-icon>calendar_today</mat-icon> Desde {{ perfil.fechaRegistro | date:'dd/MM/yyyy' }}</span>
+      </div>
+    </div>
+
+    <div class="perfil-actions">
+      <button mat-raised-button color="primary" (click)="nuevaFactura()">
+        <mat-icon>receipt_long</mat-icon> Nueva factura
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ── Card de membresía ───────────────────────────────────────────────── -->
+  <div class="membresia-wrap">
+
+    <mat-card [class]="'card-membresia estado-' + perfil.estado.toLowerCase()">
+      <mat-card-content>
+        <mat-icon class="estado-icon">{{ getEstadoIcon(perfil.estado) }}</mat-icon>
+        <div class="membresia-info">
+          <span class="membresia-label">{{ getEstadoLabel(perfil.estado) }}</span>
+          <span class="membresia-plan" *ngIf="perfil.ultimoPlan">{{ perfil.ultimoPlan }}</span>
+          <span class="membresia-fechas" *ngIf="perfil.ultimaFechaFin">
+            Vence: {{ perfil.ultimaFechaFin | date:'dd/MM/yyyy' }}
+          </span>
+        </div>
+        <div [class]="'dias-badge ' + getDiasClass(perfil.diasRestantes)"
+             *ngIf="perfil.diasRestantes !== null">
+          {{ getDiasLabel(perfil.diasRestantes) }}
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+
+  <!-- ── Historial de facturas ───────────────────────────────────────────── -->
+  <mat-card class="card-historial">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>history</mat-icon>
+        Historial de facturas ({{ perfil.facturas.length }})
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+
+      <table mat-table [dataSource]="perfil.facturas" class="full-width"
+             *ngIf="perfil.facturas.length > 0; else sinFacturas">
+
+        <ng-container matColumnDef="idFactura">
+          <th mat-header-cell *matHeaderCellDef>#</th>
+          <td mat-cell *matCellDef="let f">{{ f.idFactura }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="fechaFactura">
+          <th mat-header-cell *matHeaderCellDef>Fecha</th>
+          <td mat-cell *matCellDef="let f">{{ f.fechaFactura | date:'dd/MM/yyyy' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="tipo">
+          <th mat-header-cell *matHeaderCellDef>Tipo</th>
+          <td mat-cell *matCellDef="let f">
+            <span [class]="f.tipo === 'MENSUALIDAD' ? 'chip-mens' : 'chip-diario'">{{ f.tipo }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="planNombre">
+          <th mat-header-cell *matHeaderCellDef>Plan</th>
+          <td mat-cell *matCellDef="let f">{{ f.plan?.nombre || '—' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="metodoPago">
+          <th mat-header-cell *matHeaderCellDef>Pago</th>
+          <td mat-cell *matCellDef="let f">{{ f.metodoPago || '—' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="valor">
+          <th mat-header-cell *matHeaderCellDef class="text-right">Valor</th>
+          <td mat-cell *matCellDef="let f" class="text-right valor-cell">
+            {{ formatCOP(getValorFactura(f)) }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="vigencia">
+          <th mat-header-cell *matHeaderCellDef>Vigencia</th>
+          <td mat-cell *matCellDef="let f">
+            <span *ngIf="f.fechaInicio">
+              {{ f.fechaInicio | date:'dd/MM/yy' }} → {{ f.fechaFin | date:'dd/MM/yy' }}
+            </span>
+            <span *ngIf="!f.fechaInicio" class="text-muted">—</span>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columnasFacturas"></tr>
+        <tr mat-row *matRowDef="let row; columns: columnasFacturas;"></tr>
+      </table>
+
+      <ng-template #sinFacturas>
+        <div class="sin-datos">
+          <mat-icon>receipt</mat-icon>
+          <span>Este cliente no tiene facturas registradas</span>
+          <button mat-stroked-button color="primary" (click)="nuevaFactura()">
+            <mat-icon>add</mat-icon> Crear primera factura
+          </button>
+        </div>
+      </ng-template>
+
+    </mat-card-content>
+  </mat-card>
+
+</ng-container>

@@ -1,50 +1,114 @@
 <div class="page-header">
   <h2>Clientes</h2>
   <div class="header-actions">
-    <button mat-stroked-button color="primary" (click)="abrirFormulario(undefined!)"
-            matTooltip="Solo datos del cliente, sin plan">
-      <mat-icon>person_add</mat-icon> Solo Cliente
+    <button mat-stroked-button color="primary" (click)="abrirFormulario()"
+            matTooltip="Solo registrar datos del cliente">
+      <mat-icon>person_add</mat-icon> Solo cliente
     </button>
     <button mat-raised-button color="primary" (click)="abrirRegistroCompleto()"
-            matTooltip="Registrar cliente y asignar plan en un solo paso">
+            matTooltip="Registrar cliente y asignar plan">
       <mat-icon>assignment_turned_in</mat-icon> Cliente + Plan
     </button>
   </div>
 </div>
 
-<mat-card>
+<!-- Buscador -->
+<div class="buscador-wrap">
+  <mat-form-field appearance="outline" class="buscador-field">
+    <mat-label>Buscar por cédula, nombre o apellido</mat-label>
+    <input matInput [(ngModel)]="terminoBusqueda" (ngModelChange)="onBusquedaChange()"
+           placeholder="Ej: Juan, García, 1234...">
+    <mat-icon matPrefix>search</mat-icon>
+    <button matSuffix mat-icon-button *ngIf="terminoBusqueda"
+            (click)="terminoBusqueda=''; cargar()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </mat-form-field>
+</div>
+
+<!-- Filtros de estado -->
+<div class="filtros-estado">
+  <button *ngFor="let f of estadosFiltro"
+          [class]="'filtro-btn filtro-' + f.valor.toLowerCase()"
+          [class.activo]="estadoSeleccionado === f.valor"
+          (click)="setEstado(f.valor)">
+    <mat-icon>{{ f.icon }}</mat-icon>
+    {{ f.label }}
+  </button>
+</div>
+
+<!-- Spinner -->
+<div class="spinner-wrap" *ngIf="cargando">
+  <mat-spinner diameter="40"></mat-spinner>
+</div>
+
+<!-- Tabla -->
+<mat-card *ngIf="!cargando">
   <mat-card-content>
     <table mat-table [dataSource]="clientes" class="full-width">
 
+      <!-- Estado -->
+      <ng-container matColumnDef="estado">
+        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <td mat-cell *matCellDef="let c">
+          <span [class]="'estado-badge ' + getEstadoClass(c.estado)">
+            {{ getEstadoLabel(c.estado) }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- CC -->
       <ng-container matColumnDef="cc">
         <th mat-header-cell *matHeaderCellDef>CC</th>
         <td mat-cell *matCellDef="let c">{{ c.cc }}</td>
       </ng-container>
 
-      <ng-container matColumnDef="nombre">
+      <!-- Nombre -->
+      <ng-container matColumnDef="nombreCompleto">
         <th mat-header-cell *matHeaderCellDef>Nombre</th>
-        <td mat-cell *matCellDef="let c">{{ c.nombre1 }} {{ c.apellido1 }}</td>
+        <td mat-cell *matCellDef="let c">
+          <button class="nombre-link" (click)="verPerfil(c.cc)">
+            {{ c.nombreCompleto }}
+          </button>
+        </td>
       </ng-container>
 
+      <!-- Teléfono -->
       <ng-container matColumnDef="telefono">
         <th mat-header-cell *matHeaderCellDef>Teléfono</th>
         <td mat-cell *matCellDef="let c">{{ c.telefono || '—' }}</td>
       </ng-container>
 
-      <ng-container matColumnDef="correo">
-        <th mat-header-cell *matHeaderCellDef>Correo</th>
-        <td mat-cell *matCellDef="let c">{{ c.correo || '—' }}</td>
+      <!-- Plan -->
+      <ng-container matColumnDef="ultimoPlan">
+        <th mat-header-cell *matHeaderCellDef>Plan</th>
+        <td mat-cell *matCellDef="let c">{{ c.ultimoPlan || '—' }}</td>
       </ng-container>
 
-      <ng-container matColumnDef="fechaRegistro">
-        <th mat-header-cell *matHeaderCellDef>Registro</th>
-        <td mat-cell *matCellDef="let c">{{ c.fechaRegistro | date:'dd/MM/yyyy' }}</td>
+      <!-- Vence -->
+      <ng-container matColumnDef="ultimaFechaFin">
+        <th mat-header-cell *matHeaderCellDef>Vence</th>
+        <td mat-cell *matCellDef="let c">{{ c.ultimaFechaFin | date:'dd/MM/yyyy' }}</td>
       </ng-container>
 
+      <!-- Días -->
+      <ng-container matColumnDef="diasRestantes">
+        <th mat-header-cell *matHeaderCellDef>Días</th>
+        <td mat-cell *matCellDef="let c">
+          <span [class]="getDiasClass(c.diasRestantes)">
+            {{ getDiasLabel(c.diasRestantes) }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Acciones -->
       <ng-container matColumnDef="acciones">
         <th mat-header-cell *matHeaderCellDef>Acciones</th>
         <td mat-cell *matCellDef="let c">
-          <button mat-icon-button color="primary" matTooltip="Editar" (click)="abrirFormulario(c)">
+          <button mat-icon-button matTooltip="Ver perfil" (click)="verPerfil(c.cc)">
+            <mat-icon>person</mat-icon>
+          </button>
+          <button mat-icon-button color="primary" matTooltip="Editar" (click)="abrirFormulario(c.cc)">
             <mat-icon>edit</mat-icon>
           </button>
           <button mat-icon-button color="warn" matTooltip="Eliminar" (click)="eliminar(c)">
@@ -57,6 +121,9 @@
       <tr mat-row *matRowDef="let row; columns: columnas;"></tr>
     </table>
 
-    <p *ngIf="clientes.length === 0" class="empty">No hay clientes registrados.</p>
+    <div class="empty" *ngIf="clientes.length === 0">
+      <mat-icon>person_search</mat-icon>
+      <span>No se encontraron clientes</span>
+    </div>
   </mat-card-content>
 </mat-card>
