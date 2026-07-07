@@ -15,7 +15,7 @@ public class SecurityConfig {
     /**
      * Configuración temporal para desarrollo local.
      * Permite todas las peticiones sin autenticación.
-     * Cuando escales, aquí agregas JWT o sesiones.
+     * Cuando escale, aquí agrego JWT o sesiones.
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

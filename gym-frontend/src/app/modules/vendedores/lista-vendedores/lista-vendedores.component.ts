@@ -1,32 +1,68 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { VendedorService } from '../../../core/services/vendedor.service';
 import { Vendedor } from '../../../core/models/models';
 import { FormVendedorComponent } from '../form-vendedor/form-vendedor.component';
 
-@Component({ selector: 'app-lista-vendedores', templateUrl: './lista-vendedores.component.html', styleUrls: ['./lista-vendedores.component.scss'] })
+@Component({
+  selector: 'app-lista-vendedores',
+  templateUrl: './lista-vendedores.component.html',
+  styleUrls: ['./lista-vendedores.component.scss']
+})
 export class ListaVendedoresComponent implements OnInit {
+
   vendedores: Vendedor[] = [];
-  columnas = ['cc', 'nombre', 'cargo', 'telefono', 'correo', 'acciones'];
+  cargando = false;
+  terminoBusqueda = '';
+  private busqueda$ = new Subject<string>();
 
-  constructor(private vendedorService: VendedorService, private dialog: MatDialog, private snackBar: MatSnackBar) {}
+  columnas = ['cc', 'nombreCompleto', 'cargo', 'telefono', 'correo', 'acciones'];
 
-  ngOnInit(): void { this.cargar(); }
+  constructor(
+    private vendedorService: VendedorService,
+    private router: Router,
+    private dialog: MatDialog,
+    private snackBar: MatSnackBar
+  ) {}
 
-  cargar(): void {
-    this.vendedorService.getAll().subscribe({ next: d => this.vendedores = d, error: () => this.msg('Error al cargar') });
+  ngOnInit(): void {
+    this.cargar();
+    this.busqueda$.pipe(
+      debounceTime(350),
+      distinctUntilChanged()
+    ).subscribe(() => this.cargar());
   }
 
-  abrir(v?: Vendedor): void {
-    this.dialog.open(FormVendedorComponent, { width: '540px', data: v ?? null })
+  cargar(): void {
+    this.cargando = true;
+    this.vendedorService.buscar(this.terminoBusqueda).subscribe({
+      next: d => { this.vendedores = d; this.cargando = false; },
+      error: () => { this.snackBar.open('Error al cargar vendedores', 'Cerrar', { duration: 3000 }); this.cargando = false; }
+    });
+  }
+
+  onBusquedaChange(): void {
+    this.busqueda$.next(this.terminoBusqueda);
+  }
+
+  verPerfil(cc: number): void {
+    this.router.navigate(['/vendedores', cc]);
+  }
+
+  abrir(vendedor?: Vendedor): void {
+    this.dialog.open(FormVendedorComponent, { width: '540px', data: vendedor ?? null })
       .afterClosed().subscribe(r => { if (r) this.cargar(); });
   }
 
   eliminar(v: Vendedor): void {
     if (!confirm(`¿Eliminar a ${v.nombre1} ${v.apellido1}?`)) return;
-    this.vendedorService.delete(v.cc).subscribe({ next: () => { this.msg('Vendedor eliminado'); this.cargar(); }, error: () => this.msg('Error') });
+    this.vendedorService.delete(v.cc).subscribe({
+      next: () => { this.snackBar.open('Vendedor eliminado', 'Cerrar', { duration: 3000 }); this.cargar(); },
+      error: () => this.snackBar.open('Error al eliminar', 'Cerrar', { duration: 3000 })
+    });
   }
-
-  msg(m: string): void { this.snackBar.open(m, 'Cerrar', { duration: 3000 }); }
 }

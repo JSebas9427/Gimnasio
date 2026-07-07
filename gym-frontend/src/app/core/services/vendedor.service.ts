@@ -1,8 +1,27 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Vendedor } from '../models/models';
+
+export interface VendedorPerfilDTO {
+  cc: number;
+  nombre1: string;
+  nombre2: string;
+  apellido1: string;
+  apellido2: string;
+  nombreCompleto: string;
+  cargo: string;
+  telefono: string;
+  correo: string;
+  totalFacturas: number;
+  totalMensualidades: number;
+  totalDiarios: number;
+  totalIngresos: number;
+  facturas: any[];
+}
+
+export type PeriodoVendedor = 'todas' | 'hoy' | 'semana' | 'mes' | 'anio';
 
 @Injectable({ providedIn: 'root' })
 export class VendedorService {
@@ -12,6 +31,16 @@ export class VendedorService {
 
   getAll(): Observable<Vendedor[]> {
     return this.http.get<Vendedor[]>(this.url);
+  }
+
+  buscar(q: string): Observable<Vendedor[]> {
+    const params = q ? new HttpParams().set('q', q) : new HttpParams();
+    return this.http.get<Vendedor[]>(`${this.url}/buscar`, { params });
+  }
+
+  getPerfil(cc: number, periodo: PeriodoVendedor = 'todas'): Observable<VendedorPerfilDTO> {
+    const params = new HttpParams().set('periodo', periodo);
+    return this.http.get<VendedorPerfilDTO>(`${this.url}/${cc}/perfil`, { params });
   }
 
   getById(cc: number): Observable<Vendedor> {

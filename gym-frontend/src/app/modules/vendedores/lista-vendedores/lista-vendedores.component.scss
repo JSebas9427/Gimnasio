@@ -1,2 +1,21 @@
-.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;h2{margin:0;font-size:1.5rem;}}
-.full-width{width:100%;}
+.page-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+  h2 { margin: 0; font-size: 1.5rem; }
+}
+.buscador-field {
+  width: 100%; margin-bottom: 16px;
+  ::ng-deep .mat-mdc-form-field-subscript-wrapper { display: none; }
+}
+.spinner-wrap { display: flex; justify-content: center; padding: 40px; }
+.full-width { width: 100%; }
+.nombre-link {
+  background: none; border: none; cursor: pointer;
+  color: #3f51b5; font-size: inherit;
+  text-decoration: underline; text-underline-offset: 2px;
+  &:hover { color: #1a237e; }
+}
+.empty {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 48px; color: #bbb;
+  mat-icon { font-size: 40px; height: 40px; width: 40px; }
+}

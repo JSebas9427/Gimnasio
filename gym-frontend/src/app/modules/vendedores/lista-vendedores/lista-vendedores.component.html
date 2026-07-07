@@ -1,23 +1,81 @@
 <div class="page-header">
   <h2>Vendedores</h2>
-  <button mat-raised-button color="primary" (click)="abrir()"><mat-icon>add</mat-icon> Nuevo Vendedor</button>
+  <button mat-raised-button color="primary" (click)="abrir()">
+    <mat-icon>add</mat-icon> Nuevo Vendedor
+  </button>
 </div>
-<mat-card>
+
+<!-- Buscador -->
+<mat-form-field appearance="outline" class="buscador-field">
+  <mat-label>Buscar por cédula, nombre o apellido</mat-label>
+  <input matInput [(ngModel)]="terminoBusqueda" (ngModelChange)="onBusquedaChange()"
+         placeholder="Ej: Carlos, Pérez, 1234...">
+  <mat-icon matPrefix>search</mat-icon>
+  <button matSuffix mat-icon-button *ngIf="terminoBusqueda" (click)="terminoBusqueda=''; cargar()">
+    <mat-icon>close</mat-icon>
+  </button>
+</mat-form-field>
+
+<!-- Spinner -->
+<div class="spinner-wrap" *ngIf="cargando">
+  <mat-spinner diameter="40"></mat-spinner>
+</div>
+
+<mat-card *ngIf="!cargando">
   <mat-card-content>
     <table mat-table [dataSource]="vendedores" class="full-width">
-      <ng-container matColumnDef="cc"><th mat-header-cell *matHeaderCellDef>CC</th><td mat-cell *matCellDef="let v">{{v.cc}}</td></ng-container>
-      <ng-container matColumnDef="nombre"><th mat-header-cell *matHeaderCellDef>Nombre</th><td mat-cell *matCellDef="let v">{{v.nombre1}} {{v.apellido1}}</td></ng-container>
-      <ng-container matColumnDef="cargo"><th mat-header-cell *matHeaderCellDef>Cargo</th><td mat-cell *matCellDef="let v">{{v.cargo||'—'}}</td></ng-container>
-      <ng-container matColumnDef="telefono"><th mat-header-cell *matHeaderCellDef>Teléfono</th><td mat-cell *matCellDef="let v">{{v.telefono||'—'}}</td></ng-container>
-      <ng-container matColumnDef="correo"><th mat-header-cell *matHeaderCellDef>Correo</th><td mat-cell *matCellDef="let v">{{v.correo||'—'}}</td></ng-container>
-      <ng-container matColumnDef="acciones"><th mat-header-cell *matHeaderCellDef>Acciones</th>
+
+      <ng-container matColumnDef="cc">
+        <th mat-header-cell *matHeaderCellDef>CC</th>
+        <td mat-cell *matCellDef="let v">{{ v.cc }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="nombreCompleto">
+        <th mat-header-cell *matHeaderCellDef>Nombre</th>
         <td mat-cell *matCellDef="let v">
-          <button mat-icon-button color="primary" (click)="abrir(v)"><mat-icon>edit</mat-icon></button>
-          <button mat-icon-button color="warn" (click)="eliminar(v)"><mat-icon>delete</mat-icon></button>
+          <button class="nombre-link" (click)="verPerfil(v.cc)">
+            {{ v.nombre1 }} {{ v.apellido1 }}
+          </button>
         </td>
       </ng-container>
+
+      <ng-container matColumnDef="cargo">
+        <th mat-header-cell *matHeaderCellDef>Cargo</th>
+        <td mat-cell *matCellDef="let v">{{ v.cargo || '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="telefono">
+        <th mat-header-cell *matHeaderCellDef>Teléfono</th>
+        <td mat-cell *matCellDef="let v">{{ v.telefono || '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="correo">
+        <th mat-header-cell *matHeaderCellDef>Correo</th>
+        <td mat-cell *matCellDef="let v">{{ v.correo || '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="acciones">
+        <th mat-header-cell *matHeaderCellDef>Acciones</th>
+        <td mat-cell *matCellDef="let v">
+          <button mat-icon-button matTooltip="Ver perfil" (click)="verPerfil(v.cc)">
+            <mat-icon>person</mat-icon>
+          </button>
+          <button mat-icon-button color="primary" matTooltip="Editar" (click)="abrir(v)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" matTooltip="Eliminar" (click)="eliminar(v)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
       <tr mat-header-row *matHeaderRowDef="columnas"></tr>
       <tr mat-row *matRowDef="let row; columns: columnas;"></tr>
     </table>
+
+    <div class="empty" *ngIf="vendedores.length === 0">
+      <mat-icon>manage_search</mat-icon>
+      <span>No se encontraron vendedores</span>
+    </div>
   </mat-card-content>
 </mat-card>
