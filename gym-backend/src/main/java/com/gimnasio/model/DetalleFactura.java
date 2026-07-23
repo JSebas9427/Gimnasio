@@ -27,6 +27,11 @@ public class DetalleFactura {
     @Column(name = "descripcion", length = 200)
     private String descripcion;
 
+    // Precio del plan en el momento de la factura (referencia histórica)
+    @Column(name = "valor_esperado", precision = 10, scale = 2)
+    private BigDecimal valorEsperado;
+
+    // Lo que realmente pagó el cliente (editable)
     @NotNull
     @DecimalMin("0.0")
     @Column(name = "valor_pagado", nullable = false, precision = 10, scale = 2)

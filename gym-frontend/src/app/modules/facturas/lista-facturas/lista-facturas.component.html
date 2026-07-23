@@ -1,71 +1,154 @@
 <div class="page-header">
   <h2>Facturas</h2>
-  <button mat-raised-button color="primary" (click)="abrir()">
+  <button mat-raised-button color="primary" (click)="abrirFormulario()">
     <mat-icon>add</mat-icon> Nueva Factura
   </button>
 </div>
 
-<mat-card>
+<!-- ── Filtros ────────────────────────────────────────────────────────────── -->
+<div class="filtros-wrap">
+
+  <!-- Buscador -->
+  <mat-form-field appearance="outline" class="buscador-field">
+    <mat-label>Buscar por # factura, CC cliente o CC vendedor</mat-label>
+    <input matInput [(ngModel)]="terminoBusqueda" (ngModelChange)="onBusquedaChange()"
+           placeholder="Ej: 001, 10234567...">
+    <mat-icon matPrefix>search</mat-icon>
+    <button matSuffix mat-icon-button *ngIf="terminoBusqueda"
+            (click)="terminoBusqueda=''; cargar()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </mat-form-field>
+
+  <!-- Mes -->
+  <mat-form-field appearance="outline" class="mes-field">
+    <mat-label>Mes</mat-label>
+    <mat-select [(ngModel)]="mesSeleccionado" (ngModelChange)="cargar()">
+      <mat-option *ngFor="let m of meses" [value]="m.valor">{{ m.label }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <!-- Año -->
+  <mat-form-field appearance="outline" class="anio-field">
+    <mat-label>Año</mat-label>
+    <mat-select [(ngModel)]="anioSeleccionado" (ngModelChange)="cargar()">
+      <mat-option *ngFor="let a of anios" [value]="a">{{ a }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+</div>
+
+<!-- Spinner -->
+<div class="spinner-wrap" *ngIf="cargando">
+  <mat-spinner diameter="40"></mat-spinner>
+</div>
+
+<!-- ── Tabla ──────────────────────────────────────────────────────────────── -->
+<mat-card *ngIf="!cargando">
   <mat-card-content>
-    <table mat-table [dataSource]="facturas" class="full-width">
+    <div class="table-wrap">
+      <table mat-table [dataSource]="facturas" class="full-width">
 
-      <ng-container matColumnDef="idFactura">
-        <th mat-header-cell *matHeaderCellDef>#</th>
-        <td mat-cell *matCellDef="let f">{{ f.idFactura }}</td>
-      </ng-container>
+        <!-- # Factura -->
+        <ng-container matColumnDef="idFactura">
+          <th mat-header-cell *matHeaderCellDef>#</th>
+          <td mat-cell *matCellDef="let f">{{ f.idFactura }}</td>
+        </ng-container>
 
-      <ng-container matColumnDef="tipo">
-        <th mat-header-cell *matHeaderCellDef>Tipo</th>
-        <td mat-cell *matCellDef="let f">
-          <span [class]="f.tipo === 'MENSUALIDAD' ? 'chip-mens' : 'chip-diario'">
-            {{ f.tipo }}
-          </span>
-        </td>
-      </ng-container>
+        <!-- Fecha -->
+        <ng-container matColumnDef="fechaFactura">
+          <th mat-header-cell *matHeaderCellDef>Fecha</th>
+          <td mat-cell *matCellDef="let f">{{ f.fechaFactura | date:'dd/MM/yyyy' }}</td>
+        </ng-container>
 
-      <ng-container matColumnDef="cliente">
-        <th mat-header-cell *matHeaderCellDef>Cliente CC</th>
-        <td mat-cell *matCellDef="let f">{{ f.cliente?.cc || 'Anónimo' }}</td>
-      </ng-container>
+        <!-- Tipo -->
+        <ng-container matColumnDef="tipo">
+          <th mat-header-cell *matHeaderCellDef>Tipo</th>
+          <td mat-cell *matCellDef="let f">
+            <span [class]="f.tipo === 'MENSUALIDAD' ? 'chip-mens' : 'chip-diario'">
+              {{ f.tipo }}
+            </span>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="vendedor">
-        <th mat-header-cell *matHeaderCellDef>Vendedor CC</th>
-        <td mat-cell *matCellDef="let f">{{ f.vendedor?.cc }}</td>
-      </ng-container>
+        <!-- CC Cliente — clic va al perfil -->
+        <ng-container matColumnDef="clienteCc">
+          <th mat-header-cell *matHeaderCellDef>CC Cliente</th>
+          <td mat-cell *matCellDef="let f">
+            <button *ngIf="f.cliente" class="cc-link"
+                    (click)="irPerfilCliente(f.cliente.cc)"
+                    matTooltip="Ver perfil del cliente">
+              {{ f.cliente.cc }}
+            </button>
+            <span *ngIf="!f.cliente" class="text-muted">Anónimo</span>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="metodoPago">
-        <th mat-header-cell *matHeaderCellDef>Pago</th>
-        <td mat-cell *matCellDef="let f">{{ f.metodoPago || '—' }}</td>
-      </ng-container>
+        <!-- CC Vendedor — clic va al perfil -->
+        <ng-container matColumnDef="vendedorCc">
+          <th mat-header-cell *matHeaderCellDef>CC Vendedor</th>
+          <td mat-cell *matCellDef="let f">
+            <button *ngIf="f.vendedor" class="cc-link"
+                    (click)="irPerfilVendedor(f.vendedor.cc)"
+                    matTooltip="Ver perfil del vendedor">
+              {{ f.vendedor.cc }}
+            </button>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="fechaFactura">
-        <th mat-header-cell *matHeaderCellDef>Fecha Factura</th>
-        <td mat-cell *matCellDef="let f">{{ f.fechaFactura | date:'dd/MM/yyyy' }}</td>
-      </ng-container>
+        <!-- Plan -->
+        <ng-container matColumnDef="plan">
+          <th mat-header-cell *matHeaderCellDef>Plan</th>
+          <td mat-cell *matCellDef="let f">{{ f.plan?.nombre || '—' }}</td>
+        </ng-container>
 
-      <ng-container matColumnDef="vigencia">
-        <th mat-header-cell *matHeaderCellDef>Vigencia</th>
-        <td mat-cell *matCellDef="let f">
-          <span *ngIf="f.fechaInicio">
-            {{ f.fechaInicio | date:'dd/MM/yy' }} → {{ f.fechaFin | date:'dd/MM/yy' }}
-          </span>
-          <span *ngIf="!f.fechaInicio">—</span>
-        </td>
-      </ng-container>
+        <!-- Método pago -->
+        <ng-container matColumnDef="metodoPago">
+          <th mat-header-cell *matHeaderCellDef>Pago</th>
+          <td mat-cell *matCellDef="let f">{{ f.metodoPago || '—' }}</td>
+        </ng-container>
 
-      <ng-container matColumnDef="acciones">
-        <th mat-header-cell *matHeaderCellDef>Acciones</th>
-        <td mat-cell *matCellDef="let f">
-          <button mat-icon-button color="warn" matTooltip="Eliminar" (click)="eliminar(f)">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </td>
-      </ng-container>
+        <!-- Valor esperado -->
+        <ng-container matColumnDef="valorEsperado">
+          <th mat-header-cell *matHeaderCellDef class="text-right">Esperado</th>
+          <td mat-cell *matCellDef="let f" class="text-right valor-esperado">
+            {{ formatCOP(getValorEsperado(f)) }}
+          </td>
+        </ng-container>
 
-      <tr mat-header-row *matHeaderRowDef="columnas"></tr>
-      <tr mat-row *matRowDef="let row; columns: columnas;"></tr>
-    </table>
+        <!-- Valor pagado -->
+        <ng-container matColumnDef="valorPagado">
+          <th mat-header-cell *matHeaderCellDef class="text-right">Pagado</th>
+          <td mat-cell *matCellDef="let f" class="text-right"
+              [class.valor-completo]="getDiferencia(f) >= 0"
+              [class.valor-pendiente]="getDiferencia(f) < 0">
+            {{ formatCOP(getValorPagado(f)) }}
+          </td>
+        </ng-container>
 
-    <p *ngIf="facturas.length === 0" class="empty">No hay facturas registradas.</p>
+        <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+        <tr mat-row *matRowDef="let row; columns: columnas;"></tr>
+
+      </table>
+    </div>
+
+    <!-- Subtotales -->
+    <div class="subtotales" *ngIf="facturas.length > 0">
+      <div class="subtotal-fila">
+        <span>{{ facturas.length }} facturas</span>
+        <div class="subtotal-valores">
+          <span class="subtotal-label">Esperado:</span>
+          <strong class="valor-esperado">{{ formatCOP(totalEsperado) }}</strong>
+          <span class="subtotal-sep">|</span>
+          <span class="subtotal-label">Pagado:</span>
+          <strong class="valor-completo">{{ formatCOP(totalPagado) }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty" *ngIf="facturas.length === 0">
+      <mat-icon>receipt_long</mat-icon>
+      <span>No se encontraron facturas</span>
+    </div>
   </mat-card-content>
 </mat-card>

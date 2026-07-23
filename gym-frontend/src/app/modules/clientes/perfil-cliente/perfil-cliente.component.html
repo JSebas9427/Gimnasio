@@ -1,20 +1,17 @@
-<!-- Spinner -->
 <div class="spinner-wrap" *ngIf="cargando">
   <mat-spinner diameter="48"></mat-spinner>
 </div>
 
 <ng-container *ngIf="!cargando && perfil">
 
-  <!-- ── Navegación ──────────────────────────────────────────────────────── -->
   <div class="nav-back">
     <button mat-button (click)="volver()">
       <mat-icon>arrow_back</mat-icon> Volver a clientes
     </button>
   </div>
 
-  <!-- ── Cabecera del perfil ─────────────────────────────────────────────── -->
+  <!-- Cabecera del perfil -->
   <div class="perfil-header">
-
     <div class="avatar">
       <mat-icon>person</mat-icon>
     </div>
@@ -29,17 +26,20 @@
       </div>
     </div>
 
+    <!-- Botones de acción -->
     <div class="perfil-actions">
+      <button mat-stroked-button color="primary" (click)="editarCliente()"
+              matTooltip="Editar datos del cliente">
+        <mat-icon>edit</mat-icon> Editar perfil
+      </button>
       <button mat-raised-button color="primary" (click)="nuevaFactura()">
         <mat-icon>receipt_long</mat-icon> Nueva factura
       </button>
     </div>
-
   </div>
 
-  <!-- ── Card de membresía ───────────────────────────────────────────────── -->
+  <!-- Card membresía -->
   <div class="membresia-wrap">
-
     <mat-card [class]="'card-membresia estado-' + perfil.estado.toLowerCase()">
       <mat-card-content>
         <mat-icon class="estado-icon">{{ getEstadoIcon(perfil.estado) }}</mat-icon>
@@ -56,10 +56,9 @@
         </div>
       </mat-card-content>
     </mat-card>
-
   </div>
 
-  <!-- ── Historial de facturas ───────────────────────────────────────────── -->
+  <!-- Historial de facturas -->
   <mat-card class="card-historial">
     <mat-card-header>
       <mat-card-title>
@@ -68,7 +67,6 @@
       </mat-card-title>
     </mat-card-header>
     <mat-card-content>
-
       <table mat-table [dataSource]="perfil.facturas" class="full-width"
              *ngIf="perfil.facturas.length > 0; else sinFacturas">
 
@@ -109,9 +107,7 @@
         <ng-container matColumnDef="vigencia">
           <th mat-header-cell *matHeaderCellDef>Vigencia</th>
           <td mat-cell *matCellDef="let f">
-            <span *ngIf="f.fechaInicio">
-              {{ f.fechaInicio | date:'dd/MM/yy' }} → {{ f.fechaFin | date:'dd/MM/yy' }}
-            </span>
+            <span *ngIf="f.fechaInicio">{{ f.fechaInicio | date:'dd/MM/yy' }} → {{ f.fechaFin | date:'dd/MM/yy' }}</span>
             <span *ngIf="!f.fechaInicio" class="text-muted">—</span>
           </td>
         </ng-container>
@@ -129,7 +125,6 @@
           </button>
         </div>
       </ng-template>
-
     </mat-card-content>
   </mat-card>
 

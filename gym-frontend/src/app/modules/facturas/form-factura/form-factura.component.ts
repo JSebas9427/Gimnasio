@@ -42,26 +42,33 @@ export class FormFacturaComponent implements OnInit {
     this.vendedorService.getAll().subscribe(d => this.vendedores = d);
 
     this.form = this.fb.group({
-      tipo:        ['MENSUALIDAD', Validators.required],
-      ccVendedor:  ['', Validators.required],
-      ccCliente:   [this.ccPreseleccionado ?? ''],
-      idPlan:      [''],
-      metodoPago:  ['EFECTIVO'],
-      fechaInicio: [this.toInputDate(this.hoy)],
-      fechaFin:    [this.toInputDate(this.en30)],
-      descripcion: ['Entreno diario'],
-      valorPagado: ['']
+      tipo:          ['MENSUALIDAD', Validators.required],
+      ccVendedor:    ['', Validators.required],
+      ccCliente:     [this.ccPreseleccionado ?? ''],
+      idPlan:        [''],
+      metodoPago:    ['EFECTIVO'],
+      fechaInicio:   [this.toInputDate(this.hoy)],
+      fechaFin:      [this.toInputDate(this.en30)],
+      valorEsperado: [{ value: '', disabled: true }],
+      valorPagado:   [''],
+      descripcion:   ['Entreno diario'],
     });
 
+    // Cuando cambia el plan → actualizar valor esperado y fechas
     this.form.get('idPlan')!.valueChanges.subscribe(idPlan => {
       const plan = this.planes.find(p => p.idPlan === idPlan);
       if (plan) {
+        this.form.get('valorEsperado')!.setValue(plan.precio);
+        if (!this.form.get('valorPagado')!.value) {
+          this.form.get('valorPagado')!.setValue(plan.precio);
+        }
         const inicio = new Date(this.form.get('fechaInicio')!.value);
         const fin = new Date(inicio.getTime() + plan.duracion * 24 * 60 * 60 * 1000);
         this.form.get('fechaFin')!.setValue(this.toInputDate(fin));
       }
     });
 
+    // Cuando cambia fecha inicio → recalcular fecha fin
     this.form.get('fechaInicio')!.valueChanges.subscribe(fecha => {
       const idPlan = this.form.get('idPlan')!.value;
       const plan = this.planes.find(p => p.idPlan === idPlan);
@@ -72,16 +79,18 @@ export class FormFacturaComponent implements OnInit {
       }
     });
 
+    // Ajustar validadores según tipo
     this.form.get('tipo')!.valueChanges.subscribe(tipo => {
       const c = this.form.controls;
       if (tipo === 'MENSUALIDAD') {
         c['ccCliente'].setValidators(Validators.required);
         c['idPlan'].setValidators(Validators.required);
-        c['valorPagado'].clearValidators();
+        c['valorPagado'].setValidators([Validators.required, Validators.min(0)]);
       } else {
         c['ccCliente'].clearValidators();
         c['idPlan'].clearValidators();
         c['valorPagado'].setValidators([Validators.required, Validators.min(1)]);
+        this.form.get('valorEsperado')!.setValue('');
       }
       Object.values(c).forEach(ctrl => ctrl.updateValueAndValidity());
     });
@@ -89,30 +98,62 @@ export class FormFacturaComponent implements OnInit {
     this.form.get('tipo')!.updateValueAndValidity();
   }
 
-  get esMensualidad(): boolean { return this.form.get('tipo')?.value === 'MENSUALIDAD'; }
+  // ── Getters ───────────────────────────────────────────────────────────
+
+  get esMensualidad(): boolean {
+    return this.form.get('tipo')?.value === 'MENSUALIDAD';
+  }
+
   get planSeleccionado(): Plan | undefined {
     return this.planes.find(p => p.idPlan === this.form.get('idPlan')?.value);
   }
 
+  get diferencia(): number {
+    const esperado = Number(this.form.get('valorEsperado')?.value) || 0;
+    const pagado   = Number(this.form.get('valorPagado')?.value)   || 0;
+    return pagado - esperado;
+  }
+
+  get hayDescuento(): boolean {
+    const esperado = Number(this.form.get('valorEsperado')?.value) || 0;
+    const pagado   = Number(this.form.get('valorPagado')?.value)   || 0;
+    return esperado > 0 && pagado > 0 && pagado < esperado;
+  }
+
+  get hayPagoExtra(): boolean {
+    return this.diferencia > 0;
+  }
+
+  get montoDescuento(): number {
+    return Math.abs(this.diferencia);
+  }
+
+  get porcentajeDescuento(): number {
+    const esperado = Number(this.form.get('valorEsperado')?.value) || 0;
+    if (esperado === 0) return 0;
+    return Math.round((this.montoDescuento / esperado) * 100);
+  }
+
+  // ── Guardar ───────────────────────────────────────────────────────────
+
   guardar(): void {
     if (this.form.invalid) return;
-    const v = this.form.value;
+    const v = this.form.getRawValue();
 
     const factura: any = {
-      tipo: v.tipo,
+      tipo:        v.tipo,
       vendedor:    { cc: Number(v.ccVendedor) },
       metodoPago:  v.metodoPago || null,
-      cliente:     v.ccCliente ? { cc: Number(v.ccCliente) } : null,
+      cliente:     v.ccCliente ? { cc: Number(v.ccCliente) }  : null,
       plan:        v.idPlan    ? { idPlan: Number(v.idPlan) } : null,
       fechaInicio: v.fechaInicio || null,
       fechaFin:    v.fechaFin    || null,
       detalles: [{
-        descripcion: this.esMensualidad
+        descripcion:   this.esMensualidad
           ? `Mensualidad - ${this.planSeleccionado?.nombre ?? ''}`
           : (v.descripcion || 'Entreno diario'),
-        valorPagado: this.esMensualidad
-          ? (this.planSeleccionado?.precio ?? 0)
-          : Number(v.valorPagado)
+        valorEsperado: this.esMensualidad ? Number(v.valorEsperado) : Number(v.valorPagado),
+        valorPagado:   Number(v.valorPagado)
       }]
     };
 
@@ -128,6 +169,12 @@ export class FormFacturaComponent implements OnInit {
   }
 
   cancelar(): void { this.ref.close(false); }
+
+  formatCOP(valor: any): string {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency', currency: 'COP', minimumFractionDigits: 0
+    }).format(Number(valor) || 0);
+  }
 
   private toInputDate(date: Date): string {
     const y = date.getFullYear();

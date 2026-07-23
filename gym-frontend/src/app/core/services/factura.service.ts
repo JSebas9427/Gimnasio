@@ -1,8 +1,28 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Factura, TipoFactura } from '../models/models';
+
+export interface DetalleDTO {
+  idDetalleFactura?: number;
+  descripcion?: string;
+  valorEsperado?: number;
+  valorPagado: number;
+}
+
+export interface FacturaDTO {
+  idFactura?: number;
+  tipo: TipoFactura;
+  metodoPago?: string;
+  fechaFactura?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  cliente?: { cc: number; nombre1?: string; apellido1?: string } | null;
+  vendedor?: { cc: number; nombre1?: string; apellido1?: string };
+  plan?: { idPlan: number; nombre?: string; precio?: number } | null;
+  detalles: DetalleDTO[];
+}
 
 @Injectable({ providedIn: 'root' })
 export class FacturaService {
@@ -10,50 +30,31 @@ export class FacturaService {
 
   constructor(private http: HttpClient) {}
 
-  getAll(): Observable<Factura[]> {
-    return this.http.get<Factura[]>(this.url);
+  getAll(): Observable<FacturaDTO[]> {
+    return this.http.get<FacturaDTO[]>(this.url);
   }
 
-  getById(id: number): Observable<Factura> {
-    return this.http.get<Factura>(`${this.url}/${id}`);
+  buscar(q: string, mes: number, anio: number): Observable<FacturaDTO[]> {
+    let params = new HttpParams();
+    if (q)    params = params.set('q', q);
+    if (mes)  params = params.set('mes', mes.toString());
+    if (anio) params = params.set('anio', anio.toString());
+    return this.http.get<FacturaDTO[]>(`${this.url}/buscar`, { params });
   }
 
-  getByCliente(cc: number): Observable<Factura[]> {
-    return this.http.get<Factura[]>(`${this.url}/cliente/${cc}`);
+  getById(id: number): Observable<FacturaDTO> {
+    return this.http.get<FacturaDTO>(`${this.url}/${id}`);
   }
 
-  getByTipo(tipo: TipoFactura): Observable<Factura[]> {
-    return this.http.get<Factura[]>(`${this.url}/tipo/${tipo}`);
+  getByCliente(cc: number): Observable<FacturaDTO[]> {
+    return this.http.get<FacturaDTO[]>(`${this.url}/cliente/${cc}`);
   }
 
-  create(factura: Factura): Observable<Factura> {
-    const payload = this.formatearFechas(factura);
-    return this.http.post<Factura>(this.url, payload);
+  create(factura: any): Observable<FacturaDTO> {
+    return this.http.post<FacturaDTO>(this.url, factura);
   }
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.url}/${id}`);
-  }
-
-  // Convierte objetos Date del datepicker a string yyyy-MM-dd
-  private formatearFechas(factura: any): any {
-    const payload = { ...factura };
-    if (payload.fechaInicio instanceof Date) {
-      payload.fechaInicio = this.toISODate(payload.fechaInicio);
-    }
-    if (payload.fechaFin instanceof Date) {
-      payload.fechaFin = this.toISODate(payload.fechaFin);
-    }
-    if (payload.fechaFactura instanceof Date) {
-      payload.fechaFactura = this.toISODate(payload.fechaFactura);
-    }
-    return payload;
-  }
-
-  private toISODate(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
   }
 }

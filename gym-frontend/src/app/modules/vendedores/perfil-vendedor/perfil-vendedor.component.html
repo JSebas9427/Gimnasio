@@ -1,11 +1,9 @@
-<!-- Spinner -->
 <div class="spinner-wrap" *ngIf="cargando">
   <mat-spinner diameter="48"></mat-spinner>
 </div>
 
 <ng-container *ngIf="!cargando && perfil">
 
-  <!-- Navegación -->
   <div class="nav-back">
     <button mat-button (click)="volver()">
       <mat-icon>arrow_back</mat-icon> Volver a vendedores
@@ -17,6 +15,7 @@
     <div class="avatar">
       <mat-icon>badge</mat-icon>
     </div>
+
     <div class="perfil-info">
       <h2>{{ perfil.nombre1 }} {{ perfil.nombre2 }} {{ perfil.apellido1 }} {{ perfil.apellido2 }}</h2>
       <span class="cc-label">CC {{ perfil.cc }}</span>
@@ -27,6 +26,14 @@
         <span *ngIf="perfil.telefono"><mat-icon>phone</mat-icon> {{ perfil.telefono }}</span>
         <span *ngIf="perfil.correo"><mat-icon>email</mat-icon> {{ perfil.correo }}</span>
       </div>
+    </div>
+
+    <!-- Botón editar -->
+    <div class="perfil-actions">
+      <button mat-stroked-button color="primary" (click)="editarVendedor()"
+              matTooltip="Editar datos del vendedor">
+        <mat-icon>edit</mat-icon> Editar perfil
+      </button>
     </div>
   </div>
 
@@ -43,7 +50,7 @@
     </div>
   </div>
 
-  <!-- Cards de resumen -->
+  <!-- Cards resumen -->
   <div class="cards-grid">
 
     <mat-card class="card-total">
@@ -97,12 +104,11 @@
     <mat-card-header>
       <mat-card-title>
         <mat-icon>history</mat-icon>
-        Facturas registradas — {{ getPeriodoLabel() }}
+        Facturas — {{ getPeriodoLabel() }}
         <span class="count-badge">{{ perfil.facturas.length }}</span>
       </mat-card-title>
     </mat-card-header>
     <mat-card-content>
-
       <table mat-table [dataSource]="perfil.facturas" class="full-width"
              *ngIf="perfil.facturas.length > 0; else sinFacturas">
 
@@ -158,7 +164,6 @@
           <span>No hay facturas registradas para {{ getPeriodoLabel() | lowercase }}</span>
         </div>
       </ng-template>
-
     </mat-card-content>
   </mat-card>
 

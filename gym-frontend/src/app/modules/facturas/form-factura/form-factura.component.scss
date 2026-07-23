@@ -1,2 +1,18 @@
-.full-width { width: 100%; margin-bottom: 8px; }
-.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
+.full-width { width: 100%; margin-bottom: 4px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 4px; }
+
+.descuento-info {
+  display: flex; align-items: center; gap: 8px;
+  background: #fff8e1; border-radius: 6px;
+  padding: 8px 12px; margin-bottom: 10px;
+  font-size: 0.88rem; color: #f57c00;
+  mat-icon { font-size: 18px; height: 18px; width: 18px; }
+}
+
+.pago-extra-info {
+  display: flex; align-items: center; gap: 8px;
+  background: #e8f5e9; border-radius: 6px;
+  padding: 8px 12px; margin-bottom: 10px;
+  font-size: 0.88rem; color: #2e7d32;
+  mat-icon { font-size: 18px; height: 18px; width: 18px; }
+}

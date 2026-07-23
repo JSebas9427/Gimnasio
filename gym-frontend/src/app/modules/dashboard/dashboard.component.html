@@ -1,0 +1,397 @@
+<div class="dashboard">
+
+  <!-- ── Cards de resumen ─────────────────────────────────────────────── -->
+  <div class="cards-resumen" *ngIf="resumen">
+
+    <mat-card class="card-stat c-ingresos">
+      <mat-card-content>
+        <div class="stat-icon"><mat-icon>attach_money</mat-icon></div>
+        <div class="stat-data">
+          <span class="stat-label">Ingresos hoy</span>
+          <span class="stat-valor">{{ formatCOP(resumen.ingresosHoy) }}</span>
+          <span class="stat-sub">Semana: {{ formatCOP(resumen.ingresosSemana) }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="card-stat c-activos">
+      <mat-card-content>
+        <div class="stat-icon"><mat-icon>people</mat-icon></div>
+        <div class="stat-data">
+          <span class="stat-label">Clientes activos</span>
+          <span class="stat-valor">{{ resumen.clientesActivos }}</span>
+          <span class="stat-sub">de {{ resumen.totalClientes }} totales</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="card-stat c-facturas">
+      <mat-card-content>
+        <div class="stat-icon"><mat-icon>receipt_long</mat-icon></div>
+        <div class="stat-data">
+          <span class="stat-label">Facturas hoy</span>
+          <span class="stat-valor">{{ resumen.facturasHoy }}</span>
+          <span class="stat-sub">registradas hoy</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="card-stat c-alertas"
+              [class.alerta-activa]="resumen.clientesVencenHoy > 0">
+      <mat-card-content>
+        <div class="stat-icon"><mat-icon>warning</mat-icon></div>
+        <div class="stat-data">
+          <span class="stat-label">Vencen pronto</span>
+          <span class="stat-valor">{{ resumen.clientesVencen7Dias }}</span>
+          <span class="stat-sub">
+            {{ resumen.clientesVencenHoy }} hoy ·
+            {{ resumen.clientesVencen3Dias }} en 3 días
+          </span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+
+  <!-- ── Layout principal ─────────────────────────────────────────────── -->
+  <div class="fila-principal">
+
+    <!-- ── COL IZQUIERDA ── -->
+    <div class="col-izq">
+
+      <!-- Panel de ingreso -->
+      <mat-card class="card-ingreso">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>sensor_door</mat-icon> Panel de ingreso
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+
+          <div class="buscar-cc">
+            <mat-form-field appearance="outline" class="cc-field">
+              <mat-label>Cédula</mat-label>
+              <input matInput type="number" [(ngModel)]="ccBusqueda"
+                     (keydown)="onCCKeydown($event)"
+                     placeholder="Ingresa CC y presiona Enter">
+              <mat-icon matPrefix>badge</mat-icon>
+            </mat-form-field>
+            <button mat-raised-button color="primary"
+                    (click)="buscarCliente()" [disabled]="buscandoCliente || !ccBusqueda">
+              <mat-spinner *ngIf="buscandoCliente" diameter="18"></mat-spinner>
+              <mat-icon *ngIf="!buscandoCliente">search</mat-icon>
+            </button>
+          </div>
+
+          <!-- No encontrado -->
+          <div class="cliente-no-encontrado" *ngIf="clienteNoEncontrado">
+            <mat-icon>person_off</mat-icon>
+            <span>CC <strong>{{ ccBusqueda }}</strong> no registrada en el sistema</span>
+            <button mat-button (click)="limpiarBusqueda()">Limpiar</button>
+          </div>
+
+          <!-- Resultado -->
+          <div class="cliente-result" *ngIf="clienteIngreso">
+
+            <!-- ── VISTA EMPLEADO ── -->
+            <ng-container *ngIf="clienteIngreso.tipoPersona === 'EMPLEADO'">
+              <div class="cliente-avatar">
+                <div class="avatar avatar-empleado">
+                  <mat-icon>badge</mat-icon>
+                </div>
+                <div class="cliente-nombre">
+                  <h3>{{ clienteIngreso.nombreCompleto }}</h3>
+                  <span class="cc-sub">CC {{ clienteIngreso.cc }}</span>
+                </div>
+                <span class="estado-badge estado-empleado">EMPLEADO</span>
+              </div>
+
+              <div class="empleado-info">
+                <mat-icon>work</mat-icon>
+                <span>Cargo: <strong>{{ clienteIngreso.cargo }}</strong></span>
+              </div>
+
+              <div class="acceso-permitido-banner">
+                <mat-icon>verified</mat-icon>
+                <span>Acceso permitido — Personal del gimnasio</span>
+              </div>
+            </ng-container>
+
+            <!-- ── VISTA CLIENTE ── -->
+            <ng-container *ngIf="clienteIngreso.tipoPersona === 'CLIENTE'">
+              <div class="cliente-avatar">
+                <div class="avatar"
+                     [class.avatar-ok]="clienteIngreso.accesoPermitido"
+                     [class.avatar-deny]="!clienteIngreso.accesoPermitido">
+                  <mat-icon>person</mat-icon>
+                </div>
+                <div class="cliente-nombre">
+                  <h3>{{ clienteIngreso.nombreCompleto }}</h3>
+                  <span class="cc-sub">CC {{ clienteIngreso.cc }}</span>
+                </div>
+                <span [class]="'estado-badge estado-' + (clienteIngreso.estado ?? 'sin_plan').toLowerCase()">
+                  {{ clienteIngreso.estado === 'ACTIVO'   ? 'Vigente'   :
+                     clienteIngreso.estado === 'AGOTADO'  ? 'Expirado'  : 'Sin plan' }}
+                </span>
+              </div>
+
+              <!-- Datos de membresía -->
+              <div class="membresia-datos" *ngIf="clienteIngreso.planNombre">
+                <div class="dato-row">
+                  <mat-icon>fitness_center</mat-icon>
+                  <span>Plan: <strong>{{ clienteIngreso.planNombre }}</strong></span>
+                </div>
+                <div class="dato-row">
+                  <mat-icon>calendar_today</mat-icon>
+                  <span>Inicio: <strong>{{ clienteIngreso.fechaInicio | date:'dd/MM/yyyy' }}</strong></span>
+                </div>
+                <div class="dato-row">
+                  <mat-icon>event</mat-icon>
+                  <span>Vence: <strong>{{ clienteIngreso.fechaFin | date:'dd/MM/yyyy' }}</strong></span>
+                </div>
+                <div class="dato-row">
+                  <mat-icon>timer</mat-icon>
+                  <span>Días restantes:
+                    <strong [class]="getDiasClass(clienteIngreso.diasRestantes ?? 0)">
+                      {{ getDiasLabel(clienteIngreso.diasRestantes ?? 0) }}
+                    </strong>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Sin plan -->
+              <div class="sin-plan-msg" *ngIf="!clienteIngreso.planNombre">
+                <mat-icon>info_outline</mat-icon>
+                <span>{{ clienteIngreso.motivoDenegacion || 'Sin plan activo' }}</span>
+              </div>
+
+              <!-- Motivo denegación (membresía vencida) -->
+              <div class="denegacion-msg"
+                   *ngIf="!clienteIngreso.accesoPermitido && clienteIngreso.planNombre">
+                <mat-icon>block</mat-icon>
+                <span>{{ clienteIngreso.motivoDenegacion }}</span>
+              </div>
+
+            </ng-container>
+
+            <!-- Botones de acción -->
+            <div class="acceso-botones">
+              <button mat-raised-button
+                      [color]="clienteIngreso.accesoPermitido ? 'primary' : 'warn'"
+                      (click)="permitirAcceso()" [disabled]="abriendo">
+                <mat-spinner *ngIf="abriendo" diameter="18"></mat-spinner>
+                <mat-icon *ngIf="!abriendo">
+                  {{ clienteIngreso.accesoPermitido ? 'lock_open' : 'lock' }}
+                </mat-icon>
+                {{ clienteIngreso.accesoPermitido ? 'Permitir acceso' : 'Acceso denegado' }}
+              </button>
+              <button mat-button (click)="verPerfilCliente(clienteIngreso.cc)"
+                      *ngIf="clienteIngreso.tipoPersona === 'CLIENTE'">
+                <mat-icon>person</mat-icon> Ver perfil
+              </button>
+              <button mat-button (click)="verPerfilVendedor(clienteIngreso.cc)"
+                      *ngIf="clienteIngreso.tipoPersona === 'EMPLEADO'">
+                <mat-icon>badge</mat-icon> Ver perfil
+              </button>
+              <button mat-icon-button (click)="limpiarBusqueda()">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Estado vacío -->
+          <div class="panel-vacio"
+               *ngIf="!clienteIngreso && !clienteNoEncontrado && !buscandoCliente">
+            <mat-icon>sensor_door</mat-icon>
+            <span>Ingresa la cédula para verificar acceso</span>
+          </div>
+
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Torniquete -->
+      <mat-card class="card-torniquete">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>settings_remote</mat-icon>
+            Torniquete
+            <span class="modo-badge" *ngIf="modoSimulado">SIMULADO</span>
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="torniquete-estado">
+            <div class="estado-indicador"
+                 [class.est-conectado]="estadoTorniquete === 'CONECTADO'"
+                 [class.est-verificando]="estadoTorniquete === 'VERIFICANDO'"
+                 [class.est-desconectado]="estadoTorniquete === 'DESCONECTADO'">
+              <span class="led"></span>
+              <span class="estado-txt">
+                {{ estadoTorniquete === 'CONECTADO'   ? 'Conectado'     :
+                   estadoTorniquete === 'VERIFICANDO' ? 'Verificando...' : 'Desconectado' }}
+              </span>
+            </div>
+            <button mat-icon-button matTooltip="Verificar conexión"
+                    (click)="verificarTorniquete()">
+              <mat-icon>refresh</mat-icon>
+            </button>
+          </div>
+          <button mat-raised-button class="btn-abrir-manual"
+                  (click)="abrirManual()" [disabled]="abriendo">
+            <mat-spinner *ngIf="abriendo" diameter="18"></mat-spinner>
+            <mat-icon *ngIf="!abriendo">lock_open</mat-icon>
+            Abrir manualmente
+          </button>
+        </mat-card-content>
+      </mat-card>
+
+    </div>
+
+    <!-- ── COL DERECHA ── -->
+    <div class="col-der">
+
+      <!-- Gráfico circular -->
+      <mat-card class="card-grafico" *ngIf="estadoMembresias">
+        <mat-card-header>
+          <mat-card-title><mat-icon>donut_large</mat-icon> Estado de membresías</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="grafico-wrap">
+            <svg width="180" height="180" viewBox="0 0 180 180">
+              <path *ngIf="estadoMembresias.porcentajeActivos > 0"
+                    [attr.d]="getSvgPath(estadoMembresias.porcentajeActivos, 0)"
+                    fill="#2e7d32" opacity="0.85"/>
+              <path *ngIf="estadoMembresias.porcentajeAgotados > 0"
+                    [attr.d]="getSvgPath(estadoMembresias.porcentajeAgotados, inicioAgotados)"
+                    fill="#e65100" opacity="0.85"/>
+              <path *ngIf="estadoMembresias.porcentajeSinPlan > 0"
+                    [attr.d]="getSvgPath(estadoMembresias.porcentajeSinPlan, inicioSinPlan)"
+                    fill="#9e9e9e" opacity="0.85"/>
+              <circle cx="90" cy="90" r="44" fill="white"/>
+              <text x="90" y="86" text-anchor="middle" font-size="22"
+                    font-weight="700" fill="#222">{{ estadoMembresias.total }}</text>
+              <text x="90" y="102" text-anchor="middle" font-size="11"
+                    fill="#888">clientes</text>
+            </svg>
+            <div class="grafico-leyenda">
+              <div class="leyenda-item">
+                <span class="leyenda-dot dot-activo"></span>
+                <span>Activos</span>
+                <strong>{{ estadoMembresias.activos }} ({{ estadoMembresias.porcentajeActivos }}%)</strong>
+              </div>
+              <div class="leyenda-item">
+                <span class="leyenda-dot dot-agotado"></span>
+                <span>Agotados</span>
+                <strong>{{ estadoMembresias.agotados }} ({{ estadoMembresias.porcentajeAgotados }}%)</strong>
+              </div>
+              <div class="leyenda-item">
+                <span class="leyenda-dot dot-sinplan"></span>
+                <span>Sin plan</span>
+                <strong>{{ estadoMembresias.sinPlan }} ({{ estadoMembresias.porcentajeSinPlan }}%)</strong>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Próximos a vencer -->
+      <mat-card class="card-proximos">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>schedule</mat-icon> Próximos a vencer
+          </mat-card-title>
+          <div class="dias-selector">
+            <button *ngFor="let d of [3, 7, 15]"
+                    [class]="'dias-btn' + (diasVencimiento === d ? ' activo' : '')"
+                    (click)="cambiarDiasVencimiento(d)">{{ d }}d</button>
+          </div>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="proximos-list" *ngIf="proximosVencer.length > 0">
+            <div class="proximo-item" *ngFor="let c of proximosVencer"
+                 (click)="verPerfilCliente(c.cc)">
+              <div class="proximo-avatar">{{ c.nombreCompleto.charAt(0) }}</div>
+              <div class="proximo-info">
+                <span class="proximo-nombre">{{ c.nombreCompleto }}</span>
+                <span class="proximo-plan">{{ c.planNombre }} · {{ c.telefono || 'Sin tel.' }}</span>
+              </div>
+              <span [class]="'dias-badge ' + getDiasClass(c.diasRestantes)">
+                {{ getDiasLabel(c.diasRestantes) }}
+              </span>
+            </div>
+          </div>
+          <div class="sin-datos" *ngIf="proximosVencer.length === 0">
+            <mat-icon>check_circle</mat-icon>
+            <span>Sin vencimientos en {{ diasVencimiento }} días</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+    </div>
+  </div>
+
+  <!-- ── Tabla de accesos ──────────────────────────────────────────────── -->
+  <mat-card class="card-accesos">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>history</mat-icon>
+        Registro de accesos de hoy
+        <span class="count-badge">{{ registrosAcceso.length }}</span>
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <table mat-table [dataSource]="registrosAcceso" class="full-width"
+             *ngIf="registrosAcceso.length > 0; else sinAccesos">
+
+        <ng-container matColumnDef="hora">
+          <th mat-header-cell *matHeaderCellDef>Hora</th>
+          <td mat-cell *matCellDef="let r" class="mono">{{ r.hora }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="cc">
+          <th mat-header-cell *matHeaderCellDef>CC</th>
+          <td mat-cell *matCellDef="let r">{{ r.cc }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="nombre">
+          <th mat-header-cell *matHeaderCellDef>Nombre</th>
+          <td mat-cell *matCellDef="let r">{{ r.nombre }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="tipo">
+          <th mat-header-cell *matHeaderCellDef>Tipo</th>
+          <td mat-cell *matCellDef="let r">
+            <span [class]="r.tipo === 'EMPLEADO' ? 'chip-empleado' : 'chip-cliente'">
+              {{ r.tipo }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="metodo">
+          <th mat-header-cell *matHeaderCellDef>Método</th>
+          <td mat-cell *matCellDef="let r">{{ r.metodo }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="estado">
+          <th mat-header-cell *matHeaderCellDef>Estado</th>
+          <td mat-cell *matCellDef="let r">
+            <span [class]="r.estado === 'PERMITIDO' ? 'chip-ok' : 'chip-deny'">
+              {{ r.estado }}
+            </span>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columnasAcceso"></tr>
+        <tr mat-row *matRowDef="let row; columns: columnasAcceso;"></tr>
+      </table>
+
+      <ng-template #sinAccesos>
+        <div class="sin-datos">
+          <mat-icon>sensor_door</mat-icon>
+          <span>Aún no hay registros de acceso hoy.</span>
+        </div>
+      </ng-template>
+    </mat-card-content>
+  </mat-card>
+
+</div>

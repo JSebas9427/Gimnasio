@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { VendedorService, VendedorPerfilDTO, PeriodoVendedor } from '../../../core/services/vendedor.service';
+import { FormVendedorComponent } from '../form-vendedor/form-vendedor.component';
 
 @Component({
   selector: 'app-perfil-vendedor',
@@ -17,11 +19,11 @@ export class PerfilVendedorComponent implements OnInit {
   periodoActivo: PeriodoVendedor = 'todas';
 
   periodos: { valor: PeriodoVendedor; label: string; icon: string }[] = [
-    { valor: 'todas',  label: 'Todas',       icon: 'all_inclusive' },
-    { valor: 'hoy',    label: 'Hoy',          icon: 'today'         },
-    { valor: 'semana', label: 'Esta semana',  icon: 'date_range'    },
-    { valor: 'mes',    label: 'Este mes',     icon: 'calendar_month'},
-    { valor: 'anio',   label: 'Este año',     icon: 'event_note'    },
+    { valor: 'todas',  label: 'Todas',      icon: 'all_inclusive'  },
+    { valor: 'hoy',    label: 'Hoy',         icon: 'today'          },
+    { valor: 'semana', label: 'Esta semana', icon: 'date_range'     },
+    { valor: 'mes',    label: 'Este mes',    icon: 'calendar_month' },
+    { valor: 'anio',   label: 'Este año',   icon: 'event_note'     },
   ];
 
   columnasFacturas = ['idFactura', 'fechaFactura', 'tipo', 'cliente', 'planNombre', 'metodoPago', 'valor'];
@@ -30,6 +32,7 @@ export class PerfilVendedorComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private vendedorService: VendedorService,
+    private dialog: MatDialog,
     private snackBar: MatSnackBar
   ) {}
 
@@ -56,6 +59,17 @@ export class PerfilVendedorComponent implements OnInit {
 
   volver(): void {
     this.router.navigate(['/vendedores']);
+  }
+
+  editarVendedor(): void {
+    this.vendedorService.getById(this.cc).subscribe(vendedor => {
+      this.dialog.open(FormVendedorComponent, {
+        width: '540px',
+        data: vendedor
+      }).afterClosed().subscribe(r => {
+        if (r) this.cargar(); // recargar perfil si hubo cambios
+      });
+    });
   }
 
   getValorFactura(factura: any): number {

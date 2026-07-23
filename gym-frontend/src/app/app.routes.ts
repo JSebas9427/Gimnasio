@@ -1,7 +1,11 @@
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'reportes', pathMatch: 'full' },
+  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+  {
+    path: 'dashboard',
+    loadChildren: () => import('./modules/dashboard/dashboard.module').then(m => m.DashboardModule)
+  },
   {
     path: 'reportes',
     loadChildren: () => import('./modules/reportes/reportes.module').then(m => m.ReportesModule)
@@ -22,5 +26,5 @@ export const routes: Routes = [
     path: 'facturas',
     loadChildren: () => import('./modules/facturas/facturas.module').then(m => m.FacturasModule)
   },
-  { path: '**', redirectTo: 'reportes' }
+  { path: '**', redirectTo: 'dashboard' }
 ];

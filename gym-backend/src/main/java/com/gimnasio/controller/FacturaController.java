@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -20,6 +21,19 @@ public class FacturaController {
     @GetMapping
     public ResponseEntity<List<FacturaResponseDTO>> getAll() {
         return ResponseEntity.ok(facturaService.findAll());
+    }
+
+    // GET /api/v1/facturas/buscar?q=123&mes=6&anio=2026
+    // Todos los parámetros son opcionales:
+    //   q    → número de factura, CC cliente o CC vendedor
+    //   mes  → 1-12 (0 o ausente = sin filtro)
+    //   anio → ej. 2026 (0 o ausente = sin filtro)
+    @GetMapping("/buscar")
+    public ResponseEntity<List<FacturaResponseDTO>> buscar(
+            @RequestParam(required = false, defaultValue = "") String q,
+            @RequestParam(required = false, defaultValue = "0") int mes,
+            @RequestParam(required = false, defaultValue = "0") int anio) {
+        return ResponseEntity.ok(facturaService.buscar(q, mes, anio));
     }
 
     @GetMapping("/{id}")

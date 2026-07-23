@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,17 +30,17 @@ public class FacturaService {
     private final VendedorRepository       vendedorRepository;
     private final PlanRepository           planRepository;
 
+    // ── Listado y búsqueda ────────────────────────────────────────────────
+
     public List<FacturaResponseDTO> findAll() {
-        return facturaRepository.findAll()
-                .stream()
-                .map(FacturaResponseDTO::from)
-                .collect(Collectors.toList());
+        return facturaRepository.findAll().stream()
+                .map(FacturaResponseDTO::from).collect(Collectors.toList());
     }
 
     public FacturaResponseDTO findById(Integer id) {
-        Factura f = facturaRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Factura no encontrada: " + id));
-        return FacturaResponseDTO.from(f);
+        return FacturaResponseDTO.from(
+                facturaRepository.findById(id)
+                        .orElseThrow(() -> new EntityNotFoundException("Factura no encontrada: " + id)));
     }
 
     public List<FacturaResponseDTO> findByCliente(Integer clienteCc) {
@@ -52,16 +53,26 @@ public class FacturaService {
                 .stream().map(FacturaResponseDTO::from).collect(Collectors.toList());
     }
 
+    // ── Búsqueda combinada: término + mes/año ─────────────────────────────
+    // q     = número de factura, CC cliente o CC vendedor (vacío = todos)
+    // mes   = 0 → sin filtro de mes
+    // anio  = 0 → sin filtro de año
+    @Transactional(readOnly = true)
+    public List<FacturaResponseDTO> buscar(String q, int mes, int anio) {
+        String termino = (q == null || q.isBlank()) ? "" : q.trim();
+        List<Factura> facturas = facturaRepository.buscarConFiltro(termino, mes, anio);
+        return facturas.stream().map(FacturaResponseDTO::from).collect(Collectors.toList());
+    }
+
+    // ── Crear factura ─────────────────────────────────────────────────────
+
     public FacturaResponseDTO save(Factura factura) {
         log.info("Guardando factura tipo: {}", factura.getTipo());
         validarFactura(factura);
 
-        // Guardar detalles aparte ANTES de tocar la factura
         List<DetalleFactura> detallesOriginales = factura.getDetalles() != null
-                ? new ArrayList<>(factura.getDetalles())
-                : new ArrayList<>();
+                ? new ArrayList<>(factura.getDetalles()) : new ArrayList<>();
 
-        // ── Verificaciones ────────────────────────────────────────────────────
         vendedorRepository.findById(factura.getVendedor().getCc())
                 .orElseThrow(() -> new EntityNotFoundException("Vendedor no encontrado"));
 
@@ -79,18 +90,20 @@ public class FacturaService {
 
             factura.setFechaInicio(inicio);
             factura.setFechaFin(fin);
+
+            // Asignar valor_esperado = precio del plan en los detalles de mensualidad
+            for (DetalleFactura detalle : detallesOriginales) {
+                if (detalle.getValorEsperado() == null) {
+                    detalle.setValorEsperado(plan.getPrecio());
+                }
+            }
         }
 
         factura.setFechaFactura(LocalDate.now());
-
-        // ── Guardar factura SIN detalles ──────────────────────────────────────
-        // MUY IMPORTANTE: usar .clear() en vez de setDetalles(new ArrayList<>())
-        // para no romper la referencia que Hibernate tiene a la colección
         factura.getDetalles().clear();
         Factura guardada = facturaRepository.saveAndFlush(factura);
         log.info("Factura guardada con id: {}", guardada.getIdFactura());
 
-        // ── Guardar detalles apuntando a la factura ya persistida ─────────────
         for (DetalleFactura detalle : detallesOriginales) {
             detalle.setIdDetalleFactura(null);
             detalle.setFactura(guardada);
@@ -106,11 +119,12 @@ public class FacturaService {
     }
 
     public void delete(Integer id) {
-        if (!facturaRepository.existsById(id)) {
+        if (!facturaRepository.existsById(id))
             throw new EntityNotFoundException("Factura no encontrada: " + id);
-        }
         facturaRepository.deleteById(id);
     }
+
+    // ── Validaciones ──────────────────────────────────────────────────────
 
     private void validarFactura(Factura factura) {
         if (factura.getTipo() == TipoFactura.MENSUALIDAD) {

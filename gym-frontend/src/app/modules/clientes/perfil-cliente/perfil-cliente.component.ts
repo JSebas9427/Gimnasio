@@ -4,6 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ClienteService, ClientePerfilDTO } from '../../../core/services/cliente.service';
 import { FormFacturaComponent } from '../../facturas/form-factura/form-factura.component';
+import { FormClienteComponent } from '../form-cliente/form-cliente.component';
 
 @Component({
   selector: 'app-perfil-cliente',
@@ -46,6 +47,18 @@ export class PerfilClienteComponent implements OnInit {
     this.router.navigate(['/clientes']);
   }
 
+  editarCliente(): void {
+    // Cargar datos completos del cliente para el formulario
+    this.clienteService.getById(this.cc).subscribe(cliente => {
+      this.dialog.open(FormClienteComponent, {
+        width: '540px',
+        data: cliente
+      }).afterClosed().subscribe(r => {
+        if (r) this.cargar(); // recargar perfil si hubo cambios
+      });
+    });
+  }
+
   nuevaFactura(): void {
     this.dialog.open(FormFacturaComponent, {
       width: '520px',
@@ -53,7 +66,6 @@ export class PerfilClienteComponent implements OnInit {
     }).afterClosed().subscribe(r => { if (r) this.cargar(); });
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────
   getEstadoClass(estado: string): string {
     return { 'ACTIVO': 'badge-activo', 'AGOTADO': 'badge-agotado', 'SIN_PLAN': 'badge-sin-plan' }[estado] ?? '';
   }

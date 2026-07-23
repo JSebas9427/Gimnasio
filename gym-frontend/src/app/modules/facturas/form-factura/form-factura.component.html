@@ -14,13 +14,13 @@
     <mat-label>Vendedor</mat-label>
     <mat-select formControlName="ccVendedor">
       <mat-option *ngFor="let v of vendedores" [value]="v.cc">
-        {{ v.nombre1 }} {{ v.apellido1 }}
+        {{ v.nombre1 }} {{ v.apellido1 }} — CC {{ v.cc }}
       </mat-option>
     </mat-select>
     <mat-error>El vendedor es obligatorio</mat-error>
   </mat-form-field>
 
-  <!-- MENSUALIDAD -->
+  <!-- ── MENSUALIDAD ── -->
   <ng-container *ngIf="esMensualidad">
 
     <mat-form-field appearance="outline" class="full-width">
@@ -33,7 +33,7 @@
       <mat-label>Plan</mat-label>
       <mat-select formControlName="idPlan">
         <mat-option *ngFor="let p of planes" [value]="p.idPlan">
-          {{ p.nombre }} — {{ p.precio | currency:'COP':'code':'1.0-0' }} ({{ p.duracion }} días)
+          {{ p.nombre }} — {{ formatCOP(p.precio) }} ({{ p.duracion }} días)
         </mat-option>
       </mat-select>
       <mat-error>El plan es obligatorio</mat-error>
@@ -45,7 +45,6 @@
         <input matInput type="date" formControlName="fechaInicio">
         <mat-hint>Por defecto: hoy</mat-hint>
       </mat-form-field>
-
       <mat-form-field appearance="outline">
         <mat-label>Fecha fin</mat-label>
         <input matInput type="date" formControlName="fechaFin">
@@ -53,9 +52,38 @@
       </mat-form-field>
     </div>
 
+    <!-- Valor esperado: solo lectura -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Valor esperado (precio del plan)</mat-label>
+      <input matInput type="number" formControlName="valorEsperado">
+      <mat-icon matSuffix matTooltip="Precio oficial del plan, no editable">lock</mat-icon>
+      <mat-hint>Se llena automáticamente al seleccionar el plan</mat-hint>
+    </mat-form-field>
+
+    <!-- Valor pagado: editable -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Valor pagado</mat-label>
+      <input matInput type="number" formControlName="valorPagado"
+             placeholder="Puede ser menor si hay descuento">
+      <mat-icon matSuffix matTooltip="Monto real recibido del cliente">edit</mat-icon>
+      <mat-hint>Editable — ajusta si el cliente paga un monto diferente</mat-hint>
+    </mat-form-field>
+
+    <!-- Aviso descuento -->
+    <div class="descuento-info" *ngIf="hayDescuento">
+      <mat-icon>info_outline</mat-icon>
+      <span>Descuento: <strong>{{ formatCOP(montoDescuento) }}</strong> ({{ porcentajeDescuento }}%)</span>
+    </div>
+
+    <!-- Aviso pago extra -->
+    <div class="pago-extra-info" *ngIf="hayPagoExtra">
+      <mat-icon>arrow_upward</mat-icon>
+      <span>Pago adicional de <strong>{{ formatCOP(diferencia) }}</strong> sobre el precio del plan</span>
+    </div>
+
   </ng-container>
 
-  <!-- DIARIO -->
+  <!-- ── DIARIO ── -->
   <ng-container *ngIf="!esMensualidad">
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Valor (COP)</mat-label>
