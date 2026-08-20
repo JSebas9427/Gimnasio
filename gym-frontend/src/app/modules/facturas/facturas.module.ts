@@ -18,6 +18,8 @@ import { MatTooltipModule }         from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule }           from '@angular/material/chips';
 import { RouterModule }             from '@angular/router';
+import { MatPaginatorModule } from '@angular/material/paginator';
+
 
 @NgModule({
   declarations: [ListaFacturasComponent, FormFacturaComponent],
@@ -39,6 +41,7 @@ import { RouterModule }             from '@angular/router';
     MatTooltipModule,
     MatProgressSpinnerModule,
     MatChipsModule,
+    MatPaginatorModule,
   ]
 })
 export class FacturasModule { }

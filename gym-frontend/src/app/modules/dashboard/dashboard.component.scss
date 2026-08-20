@@ -26,6 +26,7 @@
 .c-activos   .stat-icon { background: linear-gradient(135deg,#1976d2,#42a5f5); }
 .c-facturas  .stat-icon { background: linear-gradient(135deg,#3f51b5,#7986cb); }
 .c-alertas   .stat-icon { background: linear-gradient(135deg,#e65100,#ffa726); }
+.c-accesos   .stat-icon { background: linear-gradient(135deg,#b9dcff,#0f1a22); }
 .alerta-activa { border: 2px solid #e65100 !important; }
 
 // ── Layout principal ──────────────────────────────────────────────────────
@@ -281,4 +282,59 @@
   background: #f3e5f5; color: #6a1b9a;
   padding: 2px 10px; border-radius: 12px;
   font-size: .78rem; font-weight: 600;
+}
+/* Agregar al final de dashboard.component.scss */
+
+// ── Card cumpleaños ───────────────────────────────────────────────────────
+.card-cumpleanios {
+  mat-card-header { padding: 16px 16px 0; }
+  mat-card-title  {
+    display: flex; align-items: center; gap: 8px; font-size: 1rem;
+    mat-icon { color: #e91e63; }
+  }
+  mat-card-content { padding: 8px 0 0 !important; }
+}
+
+.cumple-list { max-height: 280px; overflow-y: auto; }
+
+.cumple-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px; cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.15s;
+  &:hover { background: #fce4ec; }
+  &.es-hoy { background: #fce4ec; border-left: 4px solid #e91e63; }
+}
+
+.cumple-dia {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: #f5f5f5; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; flex-shrink: 0;
+  &.dia-hoy { background: #e91e63; }
+  .dia-num {
+    font-size: 1.1rem; font-weight: 700; color: #555; line-height: 1;
+    .dia-hoy & { color: white; }
+  }
+}
+
+.cumple-info {
+  flex: 1;
+  .cumple-nombre { display: block; font-weight: 600; font-size: 0.9rem; }
+  .cumple-edad   { font-size: 0.78rem; color: #888; }
+}
+
+.cumple-badges {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+}
+
+.badge-hoy {
+  background: #e91e63; color: white;
+  padding: 2px 10px; border-radius: 12px;
+  font-size: 0.75rem; font-weight: 700;
+}
+
+.cumple-tel {
+  display: flex; align-items: center; gap: 2px;
+  font-size: 0.75rem; color: #888;
+  mat-icon { font-size: 12px; height: 12px; width: 12px; }
 }

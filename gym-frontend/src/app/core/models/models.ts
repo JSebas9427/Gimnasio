@@ -15,6 +15,7 @@ export interface Cliente {
   apellido1: string;
   apellido2?: string;
   fechaRegistro?: string;
+  fechaNacimiento?: string; 
   telefono?: string;
   correo?: string;
 }

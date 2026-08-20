@@ -6,10 +6,10 @@ export const environment = {
   // Cambiar torniqueteSimulado a false cuando el dispositivo esté conectado
   torniqueteSimulado: true,
   torniquete: {
-    ip:       '192.168.1.100',   // IP del dispositivo en la red local
+    ip:       '192.168.0.150/#/',   // IP del dispositivo en la red local
     puerto:   80,
     usuario:  'admin',
-    password: 'admin123',
+    password: '10203040aA',
     canal:    1
   }
 };

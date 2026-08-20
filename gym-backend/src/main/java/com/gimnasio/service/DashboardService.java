@@ -5,6 +5,7 @@ import com.gimnasio.model.Cliente;
 import com.gimnasio.model.Factura;
 import com.gimnasio.model.Vendedor;
 import com.gimnasio.model.enums.TipoFactura;
+import com.gimnasio.repository.AccesoRepository;
 import com.gimnasio.repository.ClienteRepository;
 import com.gimnasio.repository.FacturaRepository;
 import com.gimnasio.repository.VendedorRepository;
@@ -30,6 +31,7 @@ public class DashboardService {
     private final FacturaRepository  facturaRepository;
     private final ClienteRepository  clienteRepository;
     private final VendedorRepository vendedorRepository;
+    private final AccesoRepository   accesoRepository;
 
     // ── Resumen general ───────────────────────────────────────────────────
     public DashboardResumenDTO getResumen() {
@@ -42,7 +44,6 @@ public class DashboardService {
 
         List<Cliente> clientes = clienteRepository.findAll();
         long total = clientes.size(), activos = 0, agotados = 0, sinPlan = 0;
-
         for (Cliente c : clientes) {
             switch (calcularEstadoCliente(c.getCc())) {
                 case "ACTIVO"  -> activos++;
@@ -55,6 +56,11 @@ public class DashboardService {
         long vencen3dias = facturaRepository.findClientesProximosAVencer(hoy, hoy.plusDays(3)).size();
         long vencen7dias = facturaRepository.findClientesProximosAVencer(hoy, hoy.plusDays(7)).size();
 
+        // Accesos del día
+        Long accesoTotal      = accesoRepository.countByFechaAcceso(hoy);
+        Long accesosPermitidos = accesoRepository.countByFechaAccesoAndEstadoAcceso(hoy, "PERMITIDO");
+        Long accesosDenegados  = accesoRepository.countByFechaAccesoAndEstadoAcceso(hoy, "DENEGADO");
+
         return DashboardResumenDTO.builder()
                 .ingresosHoy(ingresosHoy)
                 .facturasHoy(facturasHoy)
@@ -66,6 +72,9 @@ public class DashboardService {
                 .clientesVencenHoy(vencenHoy)
                 .clientesVencen3Dias(vencen3dias)
                 .clientesVencen7Dias(vencen7dias)
+                .accesosTotalHoy(accesoTotal)
+                .accesosPermitidosHoy(accesosPermitidos)
+                .accesosDenegadosHoy(accesosDenegados)
                 .build();
     }
 
@@ -73,7 +82,6 @@ public class DashboardService {
     public EstadoMembresiasDTO getEstadoMembresias() {
         List<Cliente> clientes = clienteRepository.findAll();
         long total = clientes.size(), activos = 0, agotados = 0, sinPlan = 0;
-
         for (Cliente c : clientes) {
             switch (calcularEstadoCliente(c.getCc())) {
                 case "ACTIVO"  -> activos++;
@@ -81,7 +89,6 @@ public class DashboardService {
                 default        -> sinPlan++;
             }
         }
-
         return EstadoMembresiasDTO.builder()
                 .activos(activos).agotados(agotados).sinPlan(sinPlan).total(total)
                 .porcentajeActivos(round(total > 0  ? (double) activos  / total * 100 : 0))
@@ -107,26 +114,22 @@ public class DashboardService {
                 .collect(Collectors.toList());
     }
 
-    // ── Búsqueda de ingreso — valida clientes Y empleados ─────────────────
+    // ── Búsqueda de ingreso ───────────────────────────────────────────────
     public ClienteBusquedaRapidaDTO buscarClienteIngreso(Integer cc) {
-
-        // 1. Buscar primero en vendedores (empleados)
         Optional<Vendedor> vendedorOpt = vendedorRepository.findById(cc);
         if (vendedorOpt.isPresent()) {
             Vendedor v = vendedorOpt.get();
-            log.info("Acceso de empleado — CC: {}, Cargo: {}", cc, v.getCargo());
             return ClienteBusquedaRapidaDTO.builder()
                     .cc(v.getCc())
                     .nombreCompleto(v.getNombre1() + " " + v.getApellido1())
                     .telefono(v.getTelefono())
                     .tipoPersona("EMPLEADO")
                     .cargo(v.getCargo() != null ? v.getCargo() : "Empleado")
-                    .accesoPermitido(true)   // ← empleados siempre tienen acceso
+                    .accesoPermitido(true)
                     .motivoDenegacion(null)
                     .build();
         }
 
-        // 2. Buscar en clientes
         Optional<Cliente> clienteOpt = clienteRepository.findById(cc);
         if (clienteOpt.isEmpty()) return null;
 
@@ -145,12 +148,11 @@ public class DashboardService {
             estado = "SIN_PLAN";
             motivo = "El cliente no tiene un plan activo";
         } else {
-            fechaFin    = ultima.getFechaFin();
-            fechaInicio = ultima.getFechaInicio();
-            planNombre  = ultima.getPlan() != null ? ultima.getPlan().getNombre() : null;
-            long dias   = ChronoUnit.DAYS.between(LocalDate.now(), fechaFin);
+            fechaFin      = ultima.getFechaFin();
+            fechaInicio   = ultima.getFechaInicio();
+            planNombre    = ultima.getPlan() != null ? ultima.getPlan().getNombre() : null;
+            long dias     = ChronoUnit.DAYS.between(LocalDate.now(), fechaFin);
             diasRestantes = (int) dias;
-
             if (fechaFin.isBefore(LocalDate.now())) {
                 estado = "AGOTADO";
                 motivo = "La membresía venció hace " + Math.abs(diasRestantes) + " días";
@@ -158,8 +160,6 @@ public class DashboardService {
                 estado = "ACTIVO";
             }
         }
-
-        log.info("Acceso de cliente — CC: {}, Estado: {}", cc, estado);
 
         return ClienteBusquedaRapidaDTO.builder()
                 .cc(cliente.getCc())
@@ -176,7 +176,6 @@ public class DashboardService {
                 .build();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
     private String calcularEstadoCliente(Integer cc) {
         List<Factura> m = facturaRepository.findUltimaMensualidadByCliente(cc);
         if (m.isEmpty() || m.get(0).getFechaFin() == null) return "SIN_PLAN";

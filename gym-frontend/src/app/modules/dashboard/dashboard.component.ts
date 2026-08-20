@@ -7,15 +7,8 @@ import { switchMap } from 'rxjs/operators';
 import { DashboardService, DashboardResumenDTO, EstadoMembresiasDTO,
          ClienteProximoVencerDTO, ClienteBusquedaRapidaDTO } from '../../core/services/dashboard.service';
 import { TorniqueteService, EstadoTorniquete } from '../../core/services/torniquete.service';
-
-interface RegistroAcceso {
-  hora:   string;
-  cc:     number;
-  nombre: string;
-  tipo:   'CLIENTE' | 'EMPLEADO';
-  estado: 'PERMITIDO' | 'DENEGADO';
-  metodo: string;
-}
+import { AccesoService, AccesoDTO } from '../../core/services/acceso.service';
+import { CumpleaniosService, CumpleaniosDTO } from '../../core/services/cumpleanios.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -38,16 +31,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
   estadoTorniquete: EstadoTorniquete = 'VERIFICANDO';
   modoSimulado = false;
 
-  registrosAcceso: RegistroAcceso[] = [];
-  columnasAcceso = ['hora', 'cc', 'nombre', 'tipo', 'metodo', 'estado'];
+  registrosAcceso: AccesoDTO[] = [];
+  columnasAcceso = ['horaAcceso', 'cc', 'nombre', 'tipoPersona', 'metodo', 'estadoAcceso'];
+
+  cumpleaniosMes: CumpleaniosDTO[] = [];
+  cumpleaniosHoy: CumpleaniosDTO[] = [];
 
   diasVencimiento = 7;
   private subs = new Subscription();
 
   constructor(
-    private dashboardService: DashboardService,
-    private torniqueteService: TorniqueteService,
-    private router: Router,
+    private dashboardService:   DashboardService,
+    private torniqueteService:  TorniqueteService,
+    private accesoService:      AccesoService,
+    private cumpleaniosService: CumpleaniosService,
+    private router:   Router,
     private snackBar: MatSnackBar
   ) {}
 
@@ -55,24 +53,34 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.modoSimulado = this.torniqueteService.modoSimulado;
     this.cargarTodo();
     this.verificarTorniquete();
+    this.cargarAccesosHoy();
+    this.cargarCumpleanios();
 
-    const subTorniquete = interval(30000).pipe(
-      switchMap(() => this.torniqueteService.verificarConexion())
-    ).subscribe(estado => this.estadoTorniquete = estado);
-
-    this.subs.add(subTorniquete);
+    const subT = interval(30000).pipe(switchMap(() => this.torniqueteService.verificarConexion()))
+                                .subscribe(e => this.estadoTorniquete = e);
+    const subA = interval(60000).subscribe(() => this.cargarAccesosHoy());
+    this.subs.add(subT);
+    this.subs.add(subA);
   }
 
   ngOnDestroy(): void { this.subs.unsubscribe(); }
 
   cargarTodo(): void {
     this.cargando = true;
-    let pendientes = 3;
-    const done = () => { if (--pendientes === 0) this.cargando = false; };
-
+    let p = 3;
+    const done = () => { if (--p === 0) this.cargando = false; };
     this.dashboardService.getResumen().subscribe({ next: d => { this.resumen = d; done(); }, error: () => done() });
     this.dashboardService.getEstadoMembresias().subscribe({ next: d => { this.estadoMembresias = d; done(); }, error: () => done() });
     this.dashboardService.getProximosAVencer(this.diasVencimiento).subscribe({ next: d => { this.proximosVencer = d; done(); }, error: () => done() });
+  }
+
+  cargarAccesosHoy(): void {
+    this.accesoService.getHoy().subscribe({ next: d => this.registrosAcceso = d, error: () => {} });
+  }
+
+  cargarCumpleanios(): void {
+    this.cumpleaniosService.getMes().subscribe({ next: d => this.cumpleaniosMes = d, error: () => {} });
+    this.cumpleaniosService.getHoy().subscribe({ next: d => this.cumpleaniosHoy = d, error: () => {} });
   }
 
   cambiarDiasVencimiento(dias: number): void {
@@ -86,16 +94,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.buscandoCliente = true;
     this.clienteIngreso = null;
     this.clienteNoEncontrado = false;
-
     this.dashboardService.buscarClienteIngreso(cc).subscribe({
       next: d => { this.clienteIngreso = d; this.buscandoCliente = false; },
       error: () => { this.clienteNoEncontrado = true; this.buscandoCliente = false; }
     });
   }
 
-  onCCKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter') this.buscarCliente();
-  }
+  onCCKeydown(event: KeyboardEvent): void { if (event.key === 'Enter') this.buscarCliente(); }
 
   limpiarBusqueda(): void {
     this.ccBusqueda = '';
@@ -106,36 +111,33 @@ export class DashboardComponent implements OnInit, OnDestroy {
   permitirAcceso(): void {
     if (!this.clienteIngreso) return;
     this.abriendo = true;
-
-    this.torniqueteService.registrarAcceso(
-      this.clienteIngreso.cc,
-      this.clienteIngreso.accesoPermitido
-    ).subscribe(resultado => {
-      this.abriendo = false;
-      this.snackBar.open(resultado.mensaje, 'Cerrar', { duration: 3000 });
-
-      this.registrosAcceso.unshift({
-        hora:   new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        cc:     this.clienteIngreso!.cc,
-        nombre: this.clienteIngreso!.nombreCompleto,
-        tipo:   this.clienteIngreso!.tipoPersona,
-        estado: resultado.exito ? 'PERMITIDO' : 'DENEGADO',
-        metodo: 'CC Manual'
+    this.torniqueteService.registrarAcceso(this.clienteIngreso.cc ?? 0, this.clienteIngreso.accesoPermitido)
+      .subscribe(resultado => {
+        this.abriendo = false;
+        this.snackBar.open(resultado.mensaje, 'Cerrar', { duration: 3000 });
+        this.accesoService.registrar({
+          cc:               this.clienteIngreso!.cc ?? null,
+          tipoPersona:      this.clienteIngreso!.tipoPersona,
+          nombre:           this.clienteIngreso!.nombreCompleto,
+          estadoAcceso:     resultado.exito ? 'PERMITIDO' : 'DENEGADO',
+          motivoDenegacion: this.clienteIngreso!.motivoDenegacion ?? null,
+          metodo:           'CC_MANUAL'
+        }).subscribe({
+          next: nuevo => {
+            this.registrosAcceso = [nuevo, ...this.registrosAcceso];
+            this.dashboardService.getResumen().subscribe(r => this.resumen = r);
+          },
+          error: () => {}
+        });
+        if (resultado.exito) this.limpiarBusqueda();
       });
-
-      if (this.registrosAcceso.length > 50) {
-        this.registrosAcceso = this.registrosAcceso.slice(0, 50);
-      }
-
-      if (resultado.exito) this.limpiarBusqueda();
-    });
   }
 
   abrirManual(): void {
     this.abriendo = true;
-    this.torniqueteService.abrirTorniquete().subscribe(resultado => {
+    this.torniqueteService.abrirTorniquete().subscribe(r => {
       this.abriendo = false;
-      this.snackBar.open(resultado.mensaje, 'Cerrar', { duration: 3000 });
+      this.snackBar.open(r.mensaje, 'Cerrar', { duration: 3000 });
     });
   }
 
@@ -144,10 +146,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.torniqueteService.verificarConexion().subscribe(e => this.estadoTorniquete = e);
   }
 
-  verPerfilCliente(cc: number): void { this.router.navigate(['/clientes', cc]); }
-  verPerfilVendedor(cc: number): void { this.router.navigate(['/vendedores', cc]); }
+  verPerfilCliente(cc: number): void  { window.open(`/clientes/${cc}`, '_blank'); }
+  verPerfilVendedor(cc: number): void { window.open(`/vendedores/${cc}`,'blank'); }
 
-  // ── Gráfico SVG ───────────────────────────────────────────────────────
   getSvgPath(porcentaje: number, inicio: number): string {
     const r = 70, cx = 90, cy = 90;
     const ang = (porcentaje / 100) * 360;
@@ -162,7 +163,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get inicioAgotados(): number { return (this.estadoMembresias?.porcentajeActivos ?? 0) * 3.6; }
-  get inicioSinPlan(): number  { return this.inicioAgotados + (this.estadoMembresias?.porcentajeAgotados ?? 0) * 3.6; }
+  get inicioSinPlan():  number { return this.inicioAgotados + (this.estadoMembresias?.porcentajeAgotados ?? 0) * 3.6; }
+
+  getMesNombre(): string {
+    const m = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+               'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    return m[new Date().getMonth()];
+  }
 
   getDiasLabel(dias: number): string {
     if (dias === 0) return 'Vence hoy';
@@ -172,9 +179,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getDiasClass(dias: number): string {
-    if (dias <= 0)  return 'dias-vencido';
-    if (dias <= 3)  return 'dias-urgente';
-    if (dias <= 7)  return 'dias-warning';
+    if (dias <= 0) return 'dias-vencido';
+    if (dias <= 3) return 'dias-urgente';
+    if (dias <= 7) return 'dias-warning';
     return 'dias-ok';
   }
 

@@ -14,6 +14,9 @@ export interface DashboardResumenDTO {
   clientesVencenHoy: number;
   clientesVencen3Dias: number;
   clientesVencen7Dias: number;
+   accesosTotalHoy: number;
+  accesosPermitidosHoy: number;
+  accesosDenegadosHoy: number;
 }
 
 export interface EstadoMembresiasDTO {

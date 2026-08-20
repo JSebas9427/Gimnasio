@@ -3,6 +3,7 @@ package com.gimnasio.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 public class Cliente {
 
     @Id
-    @Column(name = "CC", length = 10)
+    @Column(name = "CC")
     private Integer cc;
 
     @NotBlank
@@ -35,22 +36,23 @@ public class Cliente {
     @Column(name = "apellido_2", length = 20)
     private String apellido2;
 
-    @Column(name = "fecha_registro", nullable = false)
+    @Column(name = "fecha_registro")
     private LocalDateTime fechaRegistro;
+
+    // ← Campo nuevo
+    @Column(name = "fecha_nacimiento")
+    private LocalDate fechaNacimiento;
 
     @Size(max = 10)
     @Column(name = "telefono", length = 10)
     private String telefono;
 
-    @Email
-    @Size(max = 50)                         // ← ajustado a 50
-    @Column(name = "correo", length = 50)   // ← ajustado a 50
+    @Size(max = 50)
+    @Column(name = "correo", length = 50)
     private String correo;
 
     @PrePersist
     public void prePersist() {
-        if (this.fechaRegistro == null) {
-            this.fechaRegistro = LocalDateTime.now();
-        }
+        if (this.fechaRegistro == null) this.fechaRegistro = LocalDateTime.now();
     }
 }

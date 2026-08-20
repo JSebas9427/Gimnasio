@@ -1,81 +1,47 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, delay } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export type EstadoTorniquete = 'CONECTADO' | 'DESCONECTADO' | 'VERIFICANDO';
 
 export interface ResultadoApertura {
-  exito: boolean;
+  exito:   boolean;
   mensaje: string;
 }
 
-/**
- * TorniqueteService — capa de abstracción para el control del torniquete Dahua.
- *
- * MODO SIMULADO (environment.torniqueteSimulado = true):
- *   - Estado: siempre CONECTADO (simulado)
- *   - Apertura: simula delay de 800ms y devuelve éxito
- *
- * MODO REAL (environment.torniqueteSimulado = false):
- *   - Estado: ping HTTP al dispositivo Dahua en la red local
- *   - Apertura: POST al endpoint ISAPI del Dahua
- *
- * Para pasar a modo real cuando el dispositivo esté conectado:
- *   1. Conectar el Dahua a la red local
- *   2. Cambiar environment.torniqueteSimulado = false
- *   3. Configurar ip, puerto, usuario y password en environment.torniquete
- */
+interface TorniqueteBackendResponse {
+  exito:   boolean;
+  mensaje: string;
+  estado:  string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TorniqueteService {
 
-  private readonly simulado = environment.torniqueteSimulado;
-  private readonly config   = environment.torniquete;
+  private url = `${environment.apiUrl}/torniquete`;
 
-  // ── Estado de conexión ─────────────────────────────────────────────────
+  constructor(private http: HttpClient) {}
 
+  // El backend verifica la conexión con el Dahua
   verificarConexion(): Observable<EstadoTorniquete> {
-    if (this.simulado) {
-      // En modo simulado siempre está "conectado"
-      return of<EstadoTorniquete>('CONECTADO').pipe(delay(300));
-    }
-
-    // TODO (modo real): hacer GET al Dahua y verificar respuesta
-    // return this.http.get(`http://${this.config.ip}/ISAPI/System/status`)
-    //   .pipe(
-    //     map(() => 'CONECTADO' as EstadoTorniquete),
-    //     catchError(() => of('DESCONECTADO' as EstadoTorniquete))
-    //   );
-
-    return of<EstadoTorniquete>('DESCONECTADO').pipe(delay(300));
+    return this.http.get<TorniqueteBackendResponse>(`${this.url}/estado`).pipe(
+      map(r => r.estado === 'CONECTADO' ? 'CONECTADO' : 'DESCONECTADO'),
+      catchError(() => of<EstadoTorniquete>('DESCONECTADO'))
+    );
   }
 
-  // ── Apertura manual ────────────────────────────────────────────────────
-
+  // El backend envía el comando de apertura al Dahua
   abrirTorniquete(): Observable<ResultadoApertura> {
-    if (this.simulado) {
-      return of<ResultadoApertura>({
-        exito:   true,
-        mensaje: '✅ Torniquete abierto (modo simulado)'
-      }).pipe(delay(800));
-    }
-
-    // TODO (modo real): POST al endpoint ISAPI del Dahua
-    // return this.http.post(
-    //   `http://${this.config.ip}/ISAPI/AccessControl/RemoteControl/door/${this.config.canal}`,
-    //   '<RemoteControlDoor><cmd>open</cmd></RemoteControlDoor>',
-    //   { headers: { 'Content-Type': 'application/xml' } }
-    // ).pipe(
-    //   map(() => ({ exito: true, mensaje: 'Torniquete abierto correctamente' })),
-    //   catchError(e => of({ exito: false, mensaje: 'Error al abrir: ' + e.message }))
-    // );
-
-    return of<ResultadoApertura>({
-      exito:   false,
-      mensaje: '❌ Torniquete no conectado'
-    }).pipe(delay(800));
+    return this.http.post<TorniqueteBackendResponse>(`${this.url}/abrir`, {}).pipe(
+      map(r => ({ exito: r.exito, mensaje: r.mensaje })),
+      catchError(e => of<ResultadoApertura>({
+        exito: false,
+        mensaje: 'Error de conexión con el servidor'
+      }))
+    );
   }
-
-  // ── Acceso por cliente ─────────────────────────────────────────────────
 
   registrarAcceso(cc: number, permitido: boolean): Observable<ResultadoApertura> {
     if (!permitido) {
@@ -87,5 +53,6 @@ export class TorniqueteService {
     return this.abrirTorniquete();
   }
 
-  get modoSimulado(): boolean { return this.simulado; }
+  // Ya no necesitamos saber si es simulado desde el frontend
+  get modoSimulado(): boolean { return false; }
 }

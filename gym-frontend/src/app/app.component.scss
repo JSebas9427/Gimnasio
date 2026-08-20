@@ -1,10 +1,10 @@
 .toolbar {
   position: fixed;
   top: 0;
-  background-color: #c1ebff;
+  background: linear-gradient(135deg, #0f1a22,#ffffff);;
   z-index: 1000;
-  color: black;
-  .logo { margin-left: 12px; font-size: 1.2rem; font-weight: 600; color: black; }
+  color: rgb(253, 252, 252);
+  .logo { margin-left: 12px; font-size: 1.2rem; font-weight: 600; color: rgb(255, 255, 255); }
 }
 
 .sidenav-container {

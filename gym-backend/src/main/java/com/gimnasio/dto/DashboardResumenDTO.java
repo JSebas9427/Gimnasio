@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class DashboardResumenDTO {
 
-    // ── Financiero del día ────────────────────────────────────────────────
+    // ── Financiero ────────────────────────────────────────────────────────
     private BigDecimal ingresosHoy;
     private Long       facturasHoy;
     private BigDecimal ingresosSemana;
@@ -23,8 +23,13 @@ public class DashboardResumenDTO {
     private Long clientesAgotados;
     private Long clientesSinPlan;
 
-    // ── Alertas ───────────────────────────────────────────────────────────
+    // ── Alertas vencimiento ───────────────────────────────────────────────
     private Long clientesVencenHoy;
     private Long clientesVencen3Dias;
     private Long clientesVencen7Dias;
+
+    // ── Accesos del día ───────────────────────────────────────────────────
+    private Long accesosTotalHoy;
+    private Long accesosPermitidosHoy;
+    private Long accesosDenegadosHoy;
 }

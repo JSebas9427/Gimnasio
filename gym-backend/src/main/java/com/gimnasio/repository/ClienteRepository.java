@@ -14,10 +14,6 @@ public interface ClienteRepository extends JpaRepository<Cliente, Integer> {
 
     boolean existsByCorreo(String correo);
 
-    List<Cliente> findByFechaRegistroBetween(LocalDateTime inicio, LocalDateTime fin);
-    Long countByFechaRegistroBetween(LocalDateTime inicio, LocalDateTime fin);
-
-    // ── Búsqueda por CC, nombre o apellido (insensible a mayúsculas) ──────
     @Query("""
         SELECT c FROM Cliente c
         WHERE CAST(c.cc AS string) LIKE %:q%
@@ -25,7 +21,27 @@ public interface ClienteRepository extends JpaRepository<Cliente, Integer> {
            OR LOWER(c.nombre2)   LIKE LOWER(CONCAT('%', :q, '%'))
            OR LOWER(c.apellido1) LIKE LOWER(CONCAT('%', :q, '%'))
            OR LOWER(c.apellido2) LIKE LOWER(CONCAT('%', :q, '%'))
-        ORDER BY c.apellido1 ASC
     """)
     List<Cliente> buscar(@Param("q") String q);
+
+    List<Cliente> findByFechaRegistroBetween(LocalDateTime inicio, LocalDateTime fin);
+    Long countByFechaRegistroBetween(LocalDateTime inicio, LocalDateTime fin);
+
+    // Cumpleaños del mes
+    @Query("""
+        SELECT c FROM Cliente c
+        WHERE c.fechaNacimiento IS NOT NULL
+          AND MONTH(c.fechaNacimiento) = :mes
+        ORDER BY DAY(c.fechaNacimiento) ASC
+    """)
+    List<Cliente> findCumpleaniosMes(@Param("mes") int mes);
+
+    // Cumpleaños de hoy
+    @Query("""
+        SELECT c FROM Cliente c
+        WHERE c.fechaNacimiento IS NOT NULL
+          AND MONTH(c.fechaNacimiento) = :mes
+          AND DAY(c.fechaNacimiento)   = :dia
+    """)
+    List<Cliente> findCumpleaniosHoy(@Param("mes") int mes, @Param("dia") int dia);
 }

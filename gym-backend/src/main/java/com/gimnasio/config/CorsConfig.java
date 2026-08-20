@@ -10,7 +10,13 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/v1/**")
-                .allowedOrigins("http://localhost:4200")
+                .allowedOrigins(
+                    "http://localhost:4200",   // desarrollo local Angular
+                    "http://localhost",         // XAMPP raíz
+                    "http://localhost/gym",     // XAMPP con subfolder
+                    "http://127.0.0.1",
+                    "http://127.0.0.1/gym"
+                )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)

@@ -12,21 +12,16 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    /**
-     * Configuración temporal para desarrollo local.
-     * Permite todas las peticiones sin autenticación.
-     * Cuando escale, aquí agrego JWT o sesiones.
-     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> {}) // usa el CorsConfig registrado
+            .cors(cors -> {})
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth ->
-                auth.anyRequest().permitAll() // TODO: restringir cuando agregues auth
+                auth.anyRequest().permitAll()
             );
 
         return http.build();
