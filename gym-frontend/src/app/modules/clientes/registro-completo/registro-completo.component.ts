@@ -49,7 +49,8 @@ export class RegistroCompletoComponent implements OnInit {
       apellido1: ['', [Validators.required, Validators.maxLength(20)]],
       apellido2: ['', Validators.maxLength(20)],
       telefono:  ['', Validators.maxLength(10)],
-      correo:    ['', [Validators.email, Validators.maxLength(50)]]
+      correo:    ['', [Validators.email, Validators.maxLength(50)]],
+      fechaNacimiento: ['']
     });
 
     this.formFactura = this.fb.group({

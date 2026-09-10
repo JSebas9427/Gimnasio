@@ -146,8 +146,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.torniqueteService.verificarConexion().subscribe(e => this.estadoTorniquete = e);
   }
 
-  verPerfilCliente(cc: number): void  { window.open(`/clientes/${cc}`, '_blank'); }
-  verPerfilVendedor(cc: number): void { window.open(`/vendedores/${cc}`,'blank'); }
+  verPerfilCliente(cc: number): void  { window.open(`/gym/clientes/${cc}`, '_blank'); }
+  verPerfilVendedor(cc: number): void { window.open(`/gym/vendedores/${cc}`,'blank'); }
 
   getSvgPath(porcentaje: number, inicio: number): string {
     const r = 70, cx = 90, cy = 90;

@@ -103,7 +103,10 @@
 
 <mat-dialog-actions align="end">
   <button mat-button (click)="cancelar()">Cancelar</button>
-  <button mat-raised-button color="primary" (click)="guardar()" [disabled]="form.invalid">
-    Registrar Factura
-  </button>
+  <button mat-raised-button color="primary" 
+        (click)="guardar()" 
+        [disabled]="form.invalid || guardando">
+  <mat-spinner *ngIf="guardando" diameter="18"></mat-spinner>
+  <span *ngIf="!guardando">Registrar Factura</span>
+</button>
 </mat-dialog-actions>

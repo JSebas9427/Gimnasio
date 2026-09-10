@@ -19,6 +19,7 @@ export class FormFacturaComponent implements OnInit {
   vendedores: Vendedor[] = [];
   metodosPago = ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'NEQUI'];
   ccPreseleccionado: number | null = null;
+  guardando = false;
 
   private hoy = new Date();
   private en30 = new Date(this.hoy.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -31,7 +32,7 @@ export class FormFacturaComponent implements OnInit {
     private snackBar: MatSnackBar,
     private ref: MatDialogRef<FormFacturaComponent>,
     @Optional() @Inject(MAT_DIALOG_DATA) public data: any
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     if (this.data?.ccPreseleccionado) {
@@ -42,16 +43,16 @@ export class FormFacturaComponent implements OnInit {
     this.vendedorService.getAll().subscribe(d => this.vendedores = d);
 
     this.form = this.fb.group({
-      tipo:          ['MENSUALIDAD', Validators.required],
-      ccVendedor:    ['', Validators.required],
-      ccCliente:     [this.ccPreseleccionado ?? ''],
-      idPlan:        [''],
-      metodoPago:    ['EFECTIVO'],
-      fechaInicio:   [this.toInputDate(this.hoy)],
-      fechaFin:      [this.toInputDate(this.en30)],
+      tipo: ['MENSUALIDAD', Validators.required],
+      ccVendedor: ['', Validators.required],
+      ccCliente: [this.ccPreseleccionado ?? ''],
+      idPlan: [''],
+      metodoPago: ['EFECTIVO'],
+      fechaInicio: [this.toInputDate(this.hoy)],
+      fechaFin: [this.toInputDate(this.en30)],
       valorEsperado: [{ value: '', disabled: true }],
-      valorPagado:   [''],
-      descripcion:   ['Entreno diario'],
+      valorPagado: [''],
+      descripcion: ['Entreno diario'],
     });
 
     // Cuando cambia el plan → actualizar valor esperado y fechas
@@ -110,13 +111,13 @@ export class FormFacturaComponent implements OnInit {
 
   get diferencia(): number {
     const esperado = Number(this.form.get('valorEsperado')?.value) || 0;
-    const pagado   = Number(this.form.get('valorPagado')?.value)   || 0;
+    const pagado = Number(this.form.get('valorPagado')?.value) || 0;
     return pagado - esperado;
   }
 
   get hayDescuento(): boolean {
     const esperado = Number(this.form.get('valorEsperado')?.value) || 0;
-    const pagado   = Number(this.form.get('valorPagado')?.value)   || 0;
+    const pagado = Number(this.form.get('valorPagado')?.value) || 0;
     return esperado > 0 && pagado > 0 && pagado < esperado;
   }
 
@@ -136,24 +137,26 @@ export class FormFacturaComponent implements OnInit {
 
   // ── Guardar ───────────────────────────────────────────────────────────
 
+
   guardar(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid || this.guardando) return;
+    this.guardando = true;
     const v = this.form.getRawValue();
 
     const factura: any = {
-      tipo:        v.tipo,
-      vendedor:    { cc: Number(v.ccVendedor) },
-      metodoPago:  v.metodoPago || null,
-      cliente:     v.ccCliente ? { cc: Number(v.ccCliente) }  : null,
-      plan:        v.idPlan    ? { idPlan: Number(v.idPlan) } : null,
+      tipo: v.tipo,
+      vendedor: { cc: Number(v.ccVendedor) },
+      metodoPago: v.metodoPago || null,
+      cliente: v.ccCliente ? { cc: Number(v.ccCliente) } : null,
+      plan: v.idPlan ? { idPlan: Number(v.idPlan) } : null,
       fechaInicio: v.fechaInicio || null,
-      fechaFin:    v.fechaFin    || null,
+      fechaFin: v.fechaFin || null,
       detalles: [{
-        descripcion:   this.esMensualidad
+        descripcion: this.esMensualidad
           ? `Mensualidad - ${this.planSeleccionado?.nombre ?? ''}`
           : (v.descripcion || 'Entreno diario'),
         valorEsperado: this.esMensualidad ? Number(v.valorEsperado) : Number(v.valorPagado),
-        valorPagado:   Number(v.valorPagado)
+        valorPagado: Number(v.valorPagado)
       }]
     };
 
@@ -163,11 +166,11 @@ export class FormFacturaComponent implements OnInit {
         this.ref.close(true);
       },
       error: (e) => {
+        this.guardando = false;  // solo rehabilita si hay error
         this.snackBar.open(e.error?.mensaje ?? 'Error al registrar', 'Cerrar', { duration: 4000 });
       }
     });
   }
-
   cancelar(): void { this.ref.close(false); }
 
   formatCOP(valor: any): string {
