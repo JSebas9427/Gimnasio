@@ -1,4 +1,4 @@
-<h2 mat-dialog-title>Nueva Factura</h2>
+<h2 mat-dialog-title>{{ esEdicion ? 'Editar Factura' : 'Nueva Factura' }}</h2>
 
 <mat-dialog-content [formGroup]="form">
 
@@ -42,13 +42,20 @@
     <div class="two-col">
       <mat-form-field appearance="outline">
         <mat-label>Fecha inicio</mat-label>
-        <input matInput type="date" formControlName="fechaInicio">
+        <input matInput [matDatepicker]="pickerInicio" formControlName="fechaInicio" placeholder="dd/mm/aaaa">
+        <mat-datepicker-toggle matIconSuffix [for]="pickerInicio"></mat-datepicker-toggle>
+        <mat-datepicker #pickerInicio></mat-datepicker>
         <mat-hint>Por defecto: hoy</mat-hint>
+        <mat-error>Fecha inválida</mat-error>
       </mat-form-field>
       <mat-form-field appearance="outline">
         <mat-label>Fecha fin</mat-label>
-        <input matInput type="date" formControlName="fechaFin">
+        <input matInput [matDatepicker]="pickerFin" formControlName="fechaFin" placeholder="dd/mm/aaaa"
+               [min]="form.get('fechaInicio')?.value">
+        <mat-datepicker-toggle matIconSuffix [for]="pickerFin"></mat-datepicker-toggle>
+        <mat-datepicker #pickerFin></mat-datepicker>
         <mat-hint>Se recalcula con el plan</mat-hint>
+        <mat-error>Fecha inválida</mat-error>
       </mat-form-field>
     </div>
 
@@ -86,6 +93,13 @@
   <!-- ── DIARIO ── -->
   <ng-container *ngIf="!esMensualidad">
     <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Nombre de la persona</mat-label>
+      <input matInput formControlName="nombrePersona" placeholder="Nombre de quien entrena" maxlength="60">
+      <mat-icon matSuffix>person</mat-icon>
+      <mat-error>El nombre es obligatorio</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
       <mat-label>Valor (COP)</mat-label>
       <input matInput type="number" formControlName="valorPagado" placeholder="15000">
       <mat-error>El valor es obligatorio</mat-error>
@@ -97,16 +111,15 @@
     <mat-select formControlName="metodoPago">
       <mat-option *ngFor="let m of metodosPago" [value]="m">{{ m }}</mat-option>
     </mat-select>
+    <mat-error>El método de pago es obligatorio</mat-error>
   </mat-form-field>
 
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
   <button mat-button (click)="cancelar()">Cancelar</button>
-  <button mat-raised-button color="primary" 
-        (click)="guardar()" 
-        [disabled]="form.invalid || guardando">
+  <button mat-raised-button color="primary" (click)="guardar()" [disabled]="form.invalid || guardando">
   <mat-spinner *ngIf="guardando" diameter="18"></mat-spinner>
-  <span *ngIf="!guardando">Registrar Factura</span>
+  <span *ngIf="!guardando">{{ esEdicion ? 'Actualizar' : 'Registrar Factura' }}</span>
 </button>
 </mat-dialog-actions>

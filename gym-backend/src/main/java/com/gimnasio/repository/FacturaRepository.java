@@ -3,6 +3,8 @@ package com.gimnasio.repository;
 import com.gimnasio.model.Factura;
 import com.gimnasio.model.enums.TipoFactura;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -13,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface FacturaRepository extends JpaRepository<Factura, Integer> {
+public interface FacturaRepository extends JpaRepository<Factura, Integer>, JpaSpecificationExecutor<Factura> {
 
     List<Factura> findByCliente_Cc(Integer clienteCc);
     List<Factura> findByTipo(TipoFactura tipo);
@@ -47,18 +49,18 @@ public interface FacturaRepository extends JpaRepository<Factura, Integer> {
             @Param("inicio") LocalDate inicio,
             @Param("fin")    LocalDate fin);
 
-    // ── Búsqueda con filtro combinado ────────────────────────────────────
-    @Query("""
-        SELECT f FROM Factura f
-        WHERE (CAST(f.idFactura AS string) LIKE %:q%
-            OR CAST(f.cliente.cc AS string) LIKE %:q%
-            OR CAST(f.vendedor.cc AS string) LIKE %:q%)
-          AND (:mes  = 0 OR MONTH(f.fechaFactura) = :mes)
-          AND (:anio = 0 OR YEAR(f.fechaFactura)  = :anio)
-        ORDER BY f.fechaFactura DESC
-    """)
-    List<Factura> buscarConFiltro(
-            @Param("q") String q, @Param("mes") int mes, @Param("anio") int anio);
+    // La búsqueda combinada de facturas (texto + mes/año) está en
+    // BusquedaSpecs.facturas(q, mes, anio) y se ejecuta con findAll(spec, sort).
+
+    // ── Métodos de pago ──────────────────────────────────────────────────
+    long countByMetodoPago(String metodoPago);
+
+    @Modifying
+    @Query("UPDATE Factura f SET f.metodoPago = :nuevo WHERE f.metodoPago = :anterior")
+    int renombrarMetodoPago(@Param("anterior") String anterior, @Param("nuevo") String nuevo);
+
+    @Query("SELECT d.factura.metodoPago, COALESCE(SUM(d.valorPagado),0) FROM DetalleFactura d WHERE d.factura.fechaFactura BETWEEN :inicio AND :fin GROUP BY d.factura.metodoPago ORDER BY SUM(d.valorPagado) DESC")
+    List<Object[]> sumIngresosPorMetodo(@Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
 
     // ── Reportes: sumas ───────────────────────────────────────────────────
     List<Factura> findByFechaFacturaBetween(LocalDate inicio, LocalDate fin);

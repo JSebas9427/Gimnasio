@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { FacturasRoutingModule } from './facturas-routing.module';
 import { ListaFacturasComponent } from './lista-facturas/lista-facturas.component';
 import { FormFacturaComponent } from './form-factura/form-factura.component';
+import { DetalleFacturaComponent } from './detalle-factura/detalle-factura.component';
 
 import { MatTableModule }           from '@angular/material/table';
 import { MatButtonModule }          from '@angular/material/button';
@@ -19,10 +20,12 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule }           from '@angular/material/chips';
 import { RouterModule }             from '@angular/router';
 import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatSortModule }      from '@angular/material/sort';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 
 
 @NgModule({
-  declarations: [ListaFacturasComponent, FormFacturaComponent],
+  declarations: [ListaFacturasComponent, FormFacturaComponent, DetalleFacturaComponent],
   imports: [
     CommonModule,
     FormsModule,
@@ -42,6 +45,8 @@ import { MatPaginatorModule } from '@angular/material/paginator';
     MatProgressSpinnerModule,
     MatChipsModule,
     MatPaginatorModule,
+    MatSortModule,
+    MatDatepickerModule,
   ]
 })
 export class FacturasModule { }

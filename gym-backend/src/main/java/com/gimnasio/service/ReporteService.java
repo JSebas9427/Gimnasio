@@ -3,6 +3,7 @@ package com.gimnasio.service;
 import com.gimnasio.dto.ReporteClienteNuevoDTO;
 import com.gimnasio.dto.ReporteIngresoDiaDTO;
 import com.gimnasio.dto.ReporteIngresoDTO;
+import com.gimnasio.dto.ReporteMetodoPagoDTO;
 import com.gimnasio.dto.ReporteResumenDTO;
 import com.gimnasio.model.Cliente;
 import com.gimnasio.model.Factura;
@@ -62,6 +63,12 @@ public class ReporteService {
                 .totalTarjeta(totalTarjeta)
                 .totalTransferencia(totalTransferencia)
                 .totalNequi(totalNequi)
+                .totalesPorMetodo(facturaRepository.sumIngresosPorMetodo(inicio, fin).stream()
+                        .map(r -> ReporteMetodoPagoDTO.builder()
+                                .metodoPago(r[0] != null ? (String) r[0] : "SIN MÉTODO")
+                                .total((BigDecimal) r[1])
+                                .build())
+                        .collect(Collectors.toList()))
                 .build();
     }
 
@@ -85,6 +92,8 @@ public class ReporteService {
             if (f.getCliente() != null) {
                 clienteCc = f.getCliente().getCc();
                 clienteNombre = f.getCliente().getNombre1() + " " + f.getCliente().getApellido1();
+            } else {
+                clienteNombre = f.getNombrePersona(); // entreno diario
             }
 
             // Nombre del vendedor

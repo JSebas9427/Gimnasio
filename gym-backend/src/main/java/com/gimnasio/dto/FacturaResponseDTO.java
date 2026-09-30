@@ -15,6 +15,7 @@ public class FacturaResponseDTO {
 
     private Integer    idFactura;
     private TipoFactura tipo;
+    private String     nombrePersona;   // entreno diario
     private String     metodoPago;
     private LocalDate  fechaFactura;
     private LocalDate  fechaInicio;
@@ -57,6 +58,7 @@ public class FacturaResponseDTO {
         FacturaResponseDTO dto = new FacturaResponseDTO();
         dto.setIdFactura(f.getIdFactura());
         dto.setTipo(f.getTipo());
+        dto.setNombrePersona(f.getNombrePersona());
         dto.setMetodoPago(f.getMetodoPago());
         dto.setFechaFactura(f.getFechaFactura());
         dto.setFechaInicio(f.getFechaInicio());

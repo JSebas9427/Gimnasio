@@ -57,9 +57,14 @@
 
       <mat-form-field appearance="outline" class="full-width">
   <mat-label>Fecha de nacimiento</mat-label>
-  <input matInput type="date" formControlName="fechaNacimiento">
-  <mat-icon matSuffix>cake</mat-icon>
+  <input matInput [matDatepicker]="pickerNacimiento" formControlName="fechaNacimiento"
+         placeholder="dd/mm/aaaa" [max]="hoy">
+  <mat-datepicker-toggle matIconSuffix [for]="pickerNacimiento">
+    <mat-icon matDatepickerToggleIcon>cake</mat-icon>
+  </mat-datepicker-toggle>
+  <mat-datepicker #pickerNacimiento startView="multi-year" [startAt]="inicioCalendarioNacimiento"></mat-datepicker>
   <mat-hint>Opcional</mat-hint>
+  <mat-error>Fecha inválida</mat-error>
 </mat-form-field>
     </div>
 
@@ -116,13 +121,20 @@
     <div class="two-col">
       <mat-form-field appearance="outline">
         <mat-label>Fecha inicio</mat-label>
-        <input matInput type="date" formControlName="fechaInicio">
+        <input matInput [matDatepicker]="pickerInicio" formControlName="fechaInicio" placeholder="dd/mm/aaaa">
+        <mat-datepicker-toggle matIconSuffix [for]="pickerInicio"></mat-datepicker-toggle>
+        <mat-datepicker #pickerInicio></mat-datepicker>
         <mat-hint>Por defecto: hoy</mat-hint>
+        <mat-error>Fecha inválida</mat-error>
       </mat-form-field>
       <mat-form-field appearance="outline">
         <mat-label>Fecha fin</mat-label>
-        <input matInput type="date" formControlName="fechaFin">
+        <input matInput [matDatepicker]="pickerFin" formControlName="fechaFin" placeholder="dd/mm/aaaa"
+               [min]="formFactura.get('fechaInicio')?.value">
+        <mat-datepicker-toggle matIconSuffix [for]="pickerFin"></mat-datepicker-toggle>
+        <mat-datepicker #pickerFin></mat-datepicker>
         <mat-hint>Se recalcula con el plan</mat-hint>
+        <mat-error>Fecha inválida</mat-error>
       </mat-form-field>
     </div>
 

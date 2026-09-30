@@ -1,6 +1,8 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://localhost:8080/api/v1',
+  // Usa el mismo equipo desde el que se abrió la app (localhost en el servidor,
+  // o su IP si se entra desde otro PC de la red) con el backend en el puerto 8080.
+  apiUrl: `${window.location.protocol}//${window.location.hostname}:8080/api/v1`,
 
   torniqueteSimulado: true,
   torniquete: {

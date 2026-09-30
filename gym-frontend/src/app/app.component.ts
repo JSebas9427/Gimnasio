@@ -31,7 +31,8 @@ export class AppComponent {
     { label: 'Reportes',    icon: 'bar_chart',        route: '/reportes'   },
     { label: 'Planes',      icon: 'fitness_center',   route: '/planes'     },
     { label: 'Clientes',    icon: 'people',           route: '/clientes'   },
-    { label: 'Vendedores',  icon: 'badge',            route: '/vendedores' },
+    { label: 'Empleados',  icon: 'badge',            route: '/vendedores' },
     { label: 'Facturas',    icon: 'receipt_long',     route: '/facturas'   },
+    { label: 'Métodos de pago', icon: 'payments',     route: '/metodos-pago' },
   ];
 }

@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS factura (
     plan_id     INT(11)      NULL,
     cliente_cc  INT(11)      NULL,
     cc_vendedor INT(11)      NOT NULL,
+    nombre_persona VARCHAR(60) NULL COMMENT 'Nombre en entrenos diarios',
     metodo_pago VARCHAR(20)  NULL,
     fecha_inicio DATE        NULL,
     fecha_fin   DATE         NULL,
@@ -97,3 +98,17 @@ VALUES
     ('Básico',   80000.00, 30,  'Acceso a sala de pesas y cardio'),
     ('Premium', 120000.00, 30,  'Acceso completo + clases grupales'),
     ('Anual',   800000.00, 365, 'Plan anual con todos los beneficios');
+
+-- =============================================
+-- TABLA: metodo_pago
+-- (Hibernate la crea sola con ddl-auto=update y la llena con
+--  EFECTIVO, TARJETA, TRANSFERENCIA y NEQUI al arrancar si está vacía)
+-- =============================================
+CREATE TABLE IF NOT EXISTS metodo_pago (
+    id_metodo_pago INT(11)      NOT NULL AUTO_INCREMENT,
+    nombre         VARCHAR(20)  NOT NULL,
+    descripcion    VARCHAR(100) NULL,
+    activo         BIT(1)       NOT NULL DEFAULT 1,
+    PRIMARY KEY (id_metodo_pago),
+    UNIQUE KEY uk_metodo_pago_nombre (nombre)
+);

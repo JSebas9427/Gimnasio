@@ -5,6 +5,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ClienteService, ClientePerfilDTO } from '../../../core/services/cliente.service';
 import { FormFacturaComponent } from '../../facturas/form-factura/form-factura.component';
 import { FormClienteComponent } from '../form-cliente/form-cliente.component';
+import { NavegacionService } from '../../../core/services/navegacion.service';
 
 @Component({
   selector: 'app-perfil-cliente',
@@ -17,14 +18,15 @@ export class PerfilClienteComponent implements OnInit {
   cargando = true;
   cc!: number;
 
-  columnasFacturas = ['idFactura', 'fechaFactura', 'tipo', 'planNombre', 'metodoPago', 'valor', 'vigencia'];
+  columnasFacturas = ['idFactura', 'fechaFactura', 'tipo', 'planNombre', 'metodoPago', 'valor', 'vigencia', 'acciones'];
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private clienteService: ClienteService,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    public navegacion: NavegacionService
   ) {}
 
   ngOnInit(): void {
@@ -66,6 +68,13 @@ export class PerfilClienteComponent implements OnInit {
     }).afterClosed().subscribe(r => { if (r) this.cargar(); });
   }
 
+  editarFactura(factura: any): void {
+    this.dialog.open(FormFacturaComponent, {
+      width: '540px',
+      data: { factura }
+    }).afterClosed().subscribe(r => { if (r) this.cargar(); });
+  }
+
   getEstadoClass(estado: string): string {
     return { 'ACTIVO': 'badge-activo', 'AGOTADO': 'badge-agotado', 'SIN_PLAN': 'badge-sin-plan' }[estado] ?? '';
   }
@@ -102,4 +111,22 @@ export class PerfilClienteComponent implements OnInit {
       style: 'currency', currency: 'COP', minimumFractionDigits: 0
     }).format(valor || 0);
   }
+
+  reactivando = false;
+
+reactivarCliente(): void {
+  if (!confirm('¿Reactivar a este cliente? Volverá a aparecer en las listas.')) return;
+  this.reactivando = true;
+  this.clienteService.reactivar(this.cc).subscribe({
+    next: () => {
+      this.snackBar.open('Cliente reactivado correctamente', 'Cerrar', { duration: 3000 });
+      this.reactivando = false;
+      this.cargar();
+    },
+    error: () => {
+      this.snackBar.open('Error al reactivar el cliente', 'Cerrar', { duration: 3000 });
+      this.reactivando = false;
+    }
+  });
+}
 }

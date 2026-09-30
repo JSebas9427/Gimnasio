@@ -22,6 +22,9 @@ import { MatDividerModule }         from '@angular/material/divider';
 import { MatTabsModule }            from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatBadgeModule }           from '@angular/material/badge';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatSortModule }      from '@angular/material/sort';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 
 @NgModule({
   declarations: [
@@ -50,6 +53,9 @@ import { MatBadgeModule }           from '@angular/material/badge';
     MatTabsModule,
     MatProgressSpinnerModule,
     MatBadgeModule,
+    MatPaginatorModule,
+    MatSortModule,
+    MatDatepickerModule,
   ]
 })
 export class ClientesModule { }

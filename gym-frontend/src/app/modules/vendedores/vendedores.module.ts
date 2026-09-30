@@ -19,6 +19,9 @@ import { MatDividerModule }         from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonToggleModule }    from '@angular/material/button-toggle';
 
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatSortModule }      from '@angular/material/sort';
+
 @NgModule({
   declarations: [
     ListaVendedoresComponent,
@@ -42,6 +45,8 @@ import { MatButtonToggleModule }    from '@angular/material/button-toggle';
     MatDividerModule,
     MatProgressSpinnerModule,
     MatButtonToggleModule,
+    MatPaginatorModule,
+    MatSortModule,
   ]
 })
 export class VendedoresModule { }

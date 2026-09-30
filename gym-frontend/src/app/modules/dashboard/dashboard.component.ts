@@ -9,6 +9,7 @@ import { DashboardService, DashboardResumenDTO, EstadoMembresiasDTO,
 import { TorniqueteService, EstadoTorniquete } from '../../core/services/torniquete.service';
 import { AccesoService, AccesoDTO } from '../../core/services/acceso.service';
 import { CumpleaniosService, CumpleaniosDTO } from '../../core/services/cumpleanios.service';
+import { NavegacionService } from '../../core/services/navegacion.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -46,6 +47,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private accesoService:      AccesoService,
     private cumpleaniosService: CumpleaniosService,
     private router:   Router,
+    private navegacion: NavegacionService,
     private snackBar: MatSnackBar
   ) {}
 
@@ -146,8 +148,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.torniqueteService.verificarConexion().subscribe(e => this.estadoTorniquete = e);
   }
 
-  verPerfilCliente(cc: number): void  { window.open(`/gym/clientes/${cc}`, '_blank'); }
-  verPerfilVendedor(cc: number): void { window.open(`/gym/vendedores/${cc}`,'blank'); }
+  verPerfilCliente(cc: number | null): void  { this.navegacion.perfilCliente(cc); }
+  verPerfilVendedor(cc: number | null): void { this.navegacion.perfilVendedor(cc); }
+
+  // Tabla de accesos: abre el perfil del cliente o del empleado en una pestaña nueva
+  verPerfilAcceso(r: AccesoDTO): void {
+    if (!r.cc) return;
+    if (r.tipoPersona === 'EMPLEADO') this.verPerfilVendedor(r.cc);
+    else this.verPerfilCliente(r.cc);
+  }
 
   getSvgPath(porcentaje: number, inicio: number): string {
     const r = 70, cx = 90, cy = 90;

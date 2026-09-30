@@ -55,7 +55,12 @@ public class FacturaController {
     public ResponseEntity<FacturaResponseDTO> create(@RequestBody Factura factura) {
         return ResponseEntity.status(HttpStatus.CREATED).body(facturaService.save(factura));
     }
-
+    @PutMapping("/{id}")
+    public ResponseEntity<FacturaResponseDTO> update(
+            @PathVariable Integer id,
+            @RequestBody Factura factura) {
+        return ResponseEntity.ok(facturaService.update(id, factura));
+    }
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         facturaService.delete(id);

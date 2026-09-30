@@ -1,0 +1,12 @@
+# Apache (XAMPP): la app vive en htdocs/gym/
+# Cualquier ruta que no sea un archivo real (p. ej. /gym/clientes/123 o /gym/facturas/45,
+# que se abren en pestañas nuevas) se redirige a index.html para que la maneje Angular.
+# Requiere mod_rewrite habilitado y AllowOverride All (valores por defecto en XAMPP).
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /gym/
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /gym/index.html [L]
+</IfModule>

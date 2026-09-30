@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -6,15 +6,21 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { FacturaService, FacturaDTO } from '../../../core/services/factura.service';
 import { FormFacturaComponent } from '../form-factura/form-factura.component';
+import { NavegacionService } from '../../../core/services/navegacion.service';
+import { MatTableDataSource } from '@angular/material/table';
+import { MatPaginator } from '@angular/material/paginator';
+import { MatSort } from '@angular/material/sort';
 
 @Component({
   selector: 'app-lista-facturas',
   templateUrl: './lista-facturas.component.html',
   styleUrls: ['./lista-facturas.component.scss']
 })
-export class ListaFacturasComponent implements OnInit {
+export class ListaFacturasComponent implements OnInit, AfterViewInit  {
 
-  facturas: FacturaDTO[] = [];
+ facturas = new MatTableDataSource<FacturaDTO>([]);
+@ViewChild(MatPaginator) paginator!: MatPaginator;
+@ViewChild(MatSort) sort!: MatSort;
   cargando = false;
 
   // ── Buscador ──────────────────────────────────────────────────────────
@@ -43,11 +49,11 @@ export class ListaFacturasComponent implements OnInit {
 
   anios: number[] = [];
 
-  columnas = ['idFactura', 'fechaFactura', 'tipo', 'clienteCc', 'vendedorCc', 'plan', 'metodoPago', 'valorEsperado', 'valorPagado'];
-
+  columnas = ['idFactura', 'fechaFactura', 'tipo', 'clienteCc', 'vendedorCc', 'plan', 'metodoPago', 'valorEsperado', 'valorPagado', 'acciones'];
   constructor(
     private facturaService: FacturaService,
     private router: Router,
+    private navegacion: NavegacionService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar
   ) {}
@@ -64,17 +70,28 @@ export class ListaFacturasComponent implements OnInit {
       distinctUntilChanged()
     ).subscribe(() => this.cargar());
   }
+ngAfterViewInit(): void {
+  this.facturas.paginator = this.paginator;
+  this.facturas.sort = this.sort;
+
+  // Definir cómo ordenar columnas con valores anidados o calculados
+  this.facturas.sortingDataAccessor = (factura, columna) => {
+    switch (columna) {
+      case 'clienteCc':    return factura.cliente?.cc ?? 0;
+      case 'vendedorCc':   return factura.vendedor?.cc ?? 0;
+      case 'valorEsperado': return this.getValorEsperado(factura);
+      case 'valorPagado':   return this.getValorPagado(factura);
+      default: return (factura as any)[columna] ?? '';
+    }
+  };
+}
 
   cargar(): void {
     this.cargando = true;
-    this.facturaService.buscar(
-      this.terminoBusqueda,
-      this.mesSeleccionado,
-      this.anioSeleccionado
-    ).subscribe({
-      next: d => { this.facturas = d; this.cargando = false; },
-      error: () => { this.snackBar.open('Error al cargar facturas', 'Cerrar', { duration: 3000 }); this.cargando = false; }
-    });
+    this.facturaService.buscar(this.terminoBusqueda, this.mesSeleccionado, this.anioSeleccionado).subscribe({
+      next :d => {this.facturas.data = d; this.cargando = false;},
+      error: () => {this.snackBar.open('Error al cargar facturas' , 'Cerrar', { duration: 3000 }); this.cargando = false;}
+    })
   }
 
   onBusquedaChange(): void {
@@ -87,11 +104,11 @@ export class ListaFacturasComponent implements OnInit {
   }
 
   irPerfilCliente(cc: number | undefined): void {
-    if (cc) this.router.navigate(['/clientes', cc]);
+    this.navegacion.perfilCliente(cc);
   }
 
   irPerfilVendedor(cc: number | undefined): void {
-    if (cc) this.router.navigate(['/vendedores', cc]);
+    this.navegacion.perfilVendedor(cc);
   }
 
   // ── Helpers de totales ────────────────────────────────────────────────
@@ -108,11 +125,11 @@ export class ListaFacturasComponent implements OnInit {
   }
 
   get totalEsperado(): number {
-    return this.facturas.reduce((s, f) => s + this.getValorEsperado(f), 0);
+    return this.facturas.data.reduce((s, f) => s + this.getValorEsperado(f), 0);
   }
 
   get totalPagado(): number {
-    return this.facturas.reduce((s, f) => s + this.getValorPagado(f), 0);
+    return this.facturas.data.reduce((s, f) => s + this.getValorPagado(f), 0);
   }
 
   formatCOP(valor: number): string {
@@ -120,4 +137,14 @@ export class ListaFacturasComponent implements OnInit {
       style: 'currency', currency: 'COP', minimumFractionDigits: 0
     }).format(valor || 0);
   }
+  verFactura(factura: FacturaDTO): void {
+    this.navegacion.detalleFactura(factura.idFactura);
+  }
+
+  editarFactura(factura: FacturaDTO): void {
+  this.dialog.open(FormFacturaComponent, {
+    width: '540px',
+    data: { factura }
+  }).afterClosed().subscribe(r => { if (r) this.cargar(); });
+}
 }

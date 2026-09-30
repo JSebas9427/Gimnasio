@@ -73,4 +73,7 @@ export class ClienteService {
   delete(cc: number): Observable<void> {
     return this.http.delete<void>(`${this.url}/${cc}`);
   }
+  reactivar(cc: number): Observable<void> {
+  return this.http.patch<void>(`${this.url}/${cc}/reactivar`, {});
+}
 }

@@ -14,6 +14,7 @@ export interface DetalleDTO {
 export interface FacturaDTO {
   idFactura?: number;
   tipo: TipoFactura;
+  nombrePersona?: string | null;
   metodoPago?: string;
   fechaFactura?: string;
   fechaInicio?: string;
@@ -53,6 +54,9 @@ export class FacturaService {
   create(factura: any): Observable<FacturaDTO> {
     return this.http.post<FacturaDTO>(this.url, factura);
   }
+  update(id: number, factura: any): Observable<FacturaDTO> {
+  return this.http.put<FacturaDTO>(`${this.url}/${id}`, factura);
+}
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.url}/${id}`);

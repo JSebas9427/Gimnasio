@@ -67,4 +67,10 @@ public class ClienteController {
         clienteService.delete(cc);
         return ResponseEntity.noContent().build();
     }
+    // Reactivar cliente desactivado
+    @PatchMapping("/{cc}/reactivar")
+    public ResponseEntity<Void> reactivar(@PathVariable Integer cc) {
+        clienteService.reactivar(cc);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -1,0 +1,33 @@
+<h2 mat-dialog-title>{{ esEdicion ? 'Editar' : 'Nuevo' }} método de pago</h2>
+
+<mat-dialog-content [formGroup]="form">
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Nombre</mat-label>
+    <input matInput formControlName="nombre" placeholder="Ej: DAVIPLATA" maxlength="20">
+    <mat-hint align="end">{{ form.get('nombre')?.value?.length || 0 }}/20</mat-hint>
+    <mat-error *ngIf="form.get('nombre')?.hasError('required')">El nombre es obligatorio</mat-error>
+  </mat-form-field>
+
+  <p class="aviso" *ngIf="esEdicion">
+    <mat-icon>info_outline</mat-icon>
+    Si cambias el nombre, también se actualiza en las facturas que ya lo usan.
+  </p>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Descripción</mat-label>
+    <input matInput formControlName="descripcion" placeholder="Opcional" maxlength="100">
+  </mat-form-field>
+
+  <mat-slide-toggle color="primary" formControlName="activo">
+    Disponible al registrar facturas
+  </mat-slide-toggle>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancelar()">Cancelar</button>
+  <button mat-raised-button color="primary" (click)="guardar()" [disabled]="form.invalid || guardando">
+    {{ esEdicion ? 'Actualizar' : 'Crear' }}
+  </button>
+</mat-dialog-actions>

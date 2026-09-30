@@ -5,6 +5,7 @@ import {
   ReporteIngresoDiaDTO, ReporteClienteNuevoDTO
 } from '../../core/services/reporte.service';
 import { AccesoService, AccesoDTO } from '../../core/services/acceso.service';
+import { NavegacionService } from '../../core/services/navegacion.service';
 
 @Component({
   selector: 'app-reportes',
@@ -44,7 +45,8 @@ export class ReportesComponent implements OnInit {
   constructor(
     private reporteService: ReporteService,
     private accesoService:  AccesoService,
-    private snackBar:       MatSnackBar
+    private snackBar:       MatSnackBar,
+    public  navegacion:     NavegacionService
   ) {}
 
   ngOnInit(): void { this.cargarTodo(); }
@@ -92,6 +94,15 @@ export class ReportesComponent implements OnInit {
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
+  }
+
+  // Íconos/colores para los métodos conocidos; los creados en el CRUD usan uno genérico
+  iconoMetodo(metodo: string): string {
+    return ({ EFECTIVO: 'payments', TARJETA: 'credit_card', TRANSFERENCIA: 'swap_horiz', NEQUI: 'phone_android' } as Record<string, string>)[metodo] ?? 'account_balance_wallet';
+  }
+
+  claseMetodo(metodo: string): string {
+    return ({ EFECTIVO: 'efectivo', TARJETA: 'tarjeta', TRANSFERENCIA: 'transferencia', NEQUI: 'nequi' } as Record<string, string>)[metodo] ?? 'otro';
   }
 
   formatCOP(valor: number): string {

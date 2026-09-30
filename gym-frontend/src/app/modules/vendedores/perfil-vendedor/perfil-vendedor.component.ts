@@ -4,6 +4,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { VendedorService, VendedorPerfilDTO, PeriodoVendedor } from '../../../core/services/vendedor.service';
 import { FormVendedorComponent } from '../form-vendedor/form-vendedor.component';
+import { FormFacturaComponent } from '../../facturas/form-factura/form-factura.component';
+import { NavegacionService } from '../../../core/services/navegacion.service';
 
 @Component({
   selector: 'app-perfil-vendedor',
@@ -26,14 +28,15 @@ export class PerfilVendedorComponent implements OnInit {
     { valor: 'anio',   label: 'Este año',   icon: 'event_note'     },
   ];
 
-  columnasFacturas = ['idFactura', 'fechaFactura', 'tipo', 'cliente', 'planNombre', 'metodoPago', 'valor'];
+  columnasFacturas = ['idFactura', 'fechaFactura', 'tipo', 'cliente', 'planNombre', 'metodoPago', 'valor', 'acciones'];
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private vendedorService: VendedorService,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    public navegacion: NavegacionService
   ) {}
 
   ngOnInit(): void {
@@ -70,6 +73,13 @@ export class PerfilVendedorComponent implements OnInit {
         if (r) this.cargar(); // recargar perfil si hubo cambios
       });
     });
+  }
+
+  editarFactura(factura: any): void {
+    this.dialog.open(FormFacturaComponent, {
+      width: '540px',
+      data: { factura }
+    }).afterClosed().subscribe(r => { if (r) this.cargar(); });
   }
 
   getValorFactura(factura: any): number {

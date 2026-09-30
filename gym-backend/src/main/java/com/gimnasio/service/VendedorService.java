@@ -7,6 +7,8 @@ import com.gimnasio.model.Vendedor;
 import com.gimnasio.model.enums.TipoFactura;
 import com.gimnasio.repository.FacturaRepository;
 import com.gimnasio.repository.VendedorRepository;
+import com.gimnasio.repository.BusquedaSpecs;
+import org.springframework.data.domain.Sort;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -64,8 +66,8 @@ public class VendedorService {
 
     @Transactional(readOnly = true)
     public List<Vendedor> buscar(String q) {
-        if (q == null || q.isBlank()) return vendedorRepository.findAll();
-        return vendedorRepository.buscar(q.trim());
+        // Nombre + apellido, nombre, apellido o cédula, en cualquier orden (ver BusquedaSpecs)
+        return vendedorRepository.findAll(BusquedaSpecs.vendedores(q), Sort.by("apellido1", "nombre1"));
     }
 
     // ── Perfil completo con facturas filtradas ────────────────────────────

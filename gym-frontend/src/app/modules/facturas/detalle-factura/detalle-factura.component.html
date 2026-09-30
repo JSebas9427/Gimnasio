@@ -1,0 +1,119 @@
+<div class="spinner-wrap" *ngIf="cargando">
+  <mat-spinner diameter="48"></mat-spinner>
+</div>
+
+<div class="sin-datos" *ngIf="!cargando && error">
+  <mat-icon>receipt_long</mat-icon>
+  <span>No se encontró la factura #{{ id }}</span>
+</div>
+
+<ng-container *ngIf="!cargando && factura">
+
+  <div class="acciones no-print">
+    <button mat-stroked-button color="primary" (click)="editar()">
+      <mat-icon>edit</mat-icon> Editar
+    </button>
+    <button mat-raised-button color="primary" (click)="imprimir()">
+      <mat-icon>print</mat-icon> Imprimir
+    </button>
+  </div>
+
+  <div class="factura">
+
+    <header class="factura-header">
+      <div class="gym">
+        <span class="gym-nombre">Ethos Gym 🔱</span>
+        <span class="gym-sub">Comprobante de pago</span>
+      </div>
+      <div class="numero">
+        <span class="numero-label">Factura</span>
+        <span class="numero-valor">#{{ factura.idFactura }}</span>
+        <span class="fecha">{{ factura.fechaFactura | date:'dd/MM/yyyy' }}</span>
+      </div>
+    </header>
+
+    <section class="datos">
+      <div class="dato">
+        <span class="label">{{ factura.cliente ? 'Cliente' : 'Persona' }}</span>
+        <span class="valor">
+          <a *ngIf="factura.cliente" class="link" (click)="navegacion.perfilCliente(factura.cliente.cc)">
+            {{ nombreCliente }}
+          </a>
+          <ng-container *ngIf="!factura.cliente">{{ nombreCliente }}</ng-container>
+        </span>
+        <span class="sub" *ngIf="factura.cliente">CC {{ factura.cliente.cc }}</span>
+      </div>
+
+      <div class="dato">
+        <span class="label">Atendido por</span>
+        <span class="valor">
+          <a class="link" (click)="navegacion.perfilVendedor(factura.vendedor?.cc)">
+            {{ factura.vendedor?.nombre1 }} {{ factura.vendedor?.apellido1 }}
+          </a>
+        </span>
+        <span class="sub">CC {{ factura.vendedor?.cc }}</span>
+      </div>
+
+      <div class="dato">
+        <span class="label">Tipo</span>
+        <span class="valor">
+          <span [class]="factura.tipo === 'MENSUALIDAD' ? 'chip-mens' : 'chip-diario'">
+            {{ factura.tipo === 'MENSUALIDAD' ? 'Mensualidad' : 'Entreno diario' }}
+          </span>
+        </span>
+      </div>
+
+      <div class="dato">
+        <span class="label">Método de pago</span>
+        <span class="valor">{{ factura.metodoPago || '—' }}</span>
+      </div>
+
+      <div class="dato" *ngIf="factura.plan">
+        <span class="label">Plan</span>
+        <span class="valor">{{ factura.plan.nombre }}</span>
+      </div>
+
+      <div class="dato" *ngIf="factura.fechaInicio">
+        <span class="label">Vigencia</span>
+        <span class="valor">
+          {{ factura.fechaInicio | date:'dd/MM/yyyy' }} → {{ factura.fechaFin | date:'dd/MM/yyyy' }}
+        </span>
+      </div>
+    </section>
+
+    <table class="detalles">
+      <thead>
+        <tr>
+          <th>Descripción</th>
+          <th class="text-right">Valor</th>
+          <th class="text-right">Pagado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let d of factura.detalles">
+          <td>{{ d.descripcion || '—' }}</td>
+          <td class="text-right">{{ formatCOP(d.valorEsperado ?? d.valorPagado) }}</td>
+          <td class="text-right">{{ formatCOP(d.valorPagado) }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <section class="totales">
+      <div class="fila" *ngIf="descuento > 0">
+        <span>Subtotal</span>
+        <span>{{ formatCOP(totalEsperado) }}</span>
+      </div>
+      <div class="fila descuento" *ngIf="descuento > 0">
+        <span>Descuento</span>
+        <span>− {{ formatCOP(descuento) }}</span>
+      </div>
+      <div class="fila total">
+        <span>Total pagado</span>
+        <span>{{ formatCOP(totalPagado) }}</span>
+      </div>
+    </section>
+
+    <footer class="factura-footer">¡Gracias por entrenar con nosotros!</footer>
+  </div>
+
+</ng-container>

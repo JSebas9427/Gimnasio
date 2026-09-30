@@ -26,5 +26,9 @@ export const routes: Routes = [
     path: 'facturas',
     loadChildren: () => import('./modules/facturas/facturas.module').then(m => m.FacturasModule)
   },
+  {
+    path: 'metodos-pago',
+    loadChildren: () => import('./modules/metodos-pago/metodos-pago.module').then(m => m.MetodosPagoModule)
+  },
   { path: '**', redirectTo: 'dashboard' }
 ];

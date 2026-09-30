@@ -2,6 +2,7 @@ package com.gimnasio.repository;
 
 import com.gimnasio.model.Cliente;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -10,20 +11,20 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
-public interface ClienteRepository extends JpaRepository<Cliente, Integer> {
+// La búsqueda por texto (nombre + apellido, nombre, apellido o cédula) está en
+// BusquedaSpecs.clientes(q) y se ejecuta con findAll(spec) de JpaSpecificationExecutor.
+public interface ClienteRepository extends JpaRepository<Cliente, Integer>, JpaSpecificationExecutor<Cliente> {
 
     boolean existsByCorreo(String correo);
 
     @Query("""
-        SELECT c FROM Cliente c
-        WHERE CAST(c.cc AS string) LIKE %:q%
-           OR LOWER(c.nombre1)   LIKE LOWER(CONCAT('%', :q, '%'))
-           OR LOWER(c.nombre2)   LIKE LOWER(CONCAT('%', :q, '%'))
-           OR LOWER(c.apellido1) LIKE LOWER(CONCAT('%', :q, '%'))
-           OR LOWER(c.apellido2) LIKE LOWER(CONCAT('%', :q, '%'))
-    """)
-    List<Cliente> buscar(@Param("q") String q);
-
+    SELECT c FROM Cliente c
+    WHERE (c.activo IS NULL OR c.activo = 1)
+      AND c.fechaRegistro BETWEEN :inicio AND :fin
+""")
+    List<Cliente> findActivosByFechaRegistroBetween(
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fin") LocalDateTime fin);
     List<Cliente> findByFechaRegistroBetween(LocalDateTime inicio, LocalDateTime fin);
     Long countByFechaRegistroBetween(LocalDateTime inicio, LocalDateTime fin);
 

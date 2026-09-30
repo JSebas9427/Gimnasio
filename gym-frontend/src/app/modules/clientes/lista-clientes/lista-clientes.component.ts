@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { NavegacionService } from '../../../core/services/navegacion.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { MatDialog } from '@angular/material/dialog';
@@ -7,15 +8,22 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ClienteService, ClienteResumenDTO } from '../../../core/services/cliente.service';
 import { FormClienteComponent } from '../form-cliente/form-cliente.component';
 import { RegistroCompletoComponent } from '../registro-completo/registro-completo.component';
+import { MatTableDataSource } from '@angular/material/table';
+import { MatPaginator } from '@angular/material/paginator';
+import { MatSort } from '@angular/material/sort';
+import { AfterViewInit, ViewChild } from '@angular/core';
 
 @Component({
   selector: 'app-lista-clientes',
   templateUrl: './lista-clientes.component.html',
   styleUrls: ['./lista-clientes.component.scss']
 })
-export class ListaClientesComponent implements OnInit {
+export class ListaClientesComponent implements OnInit, AfterViewInit {
 
-  clientes: ClienteResumenDTO[] = [];
+clientes = new MatTableDataSource<ClienteResumenDTO>([]);
+@ViewChild(MatPaginator) paginator!: MatPaginator;
+@ViewChild(MatSort) sort!: MatSort;
+
   cargando = false;
 
   // Buscador
@@ -36,6 +44,7 @@ export class ListaClientesComponent implements OnInit {
   constructor(
     private clienteService: ClienteService,
     private router: Router,
+    private navegacion: NavegacionService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar
   ) {}
@@ -49,14 +58,24 @@ export class ListaClientesComponent implements OnInit {
       distinctUntilChanged()
     ).subscribe(() => this.cargar());
   }
+  ngAfterViewInit(): void {
+  this.clientes.paginator = this.paginator;
+  this.clientes.sort = this.sort;
+}
 
-  cargar(): void {
-    this.cargando = true;
-    this.clienteService.buscar(this.terminoBusqueda, this.estadoSeleccionado).subscribe({
-      next: d => { this.clientes = d; this.cargando = false; },
-      error: () => { this.snackBar.open('Error al cargar clientes', 'Cerrar', { duration: 3000 }); this.cargando = false; }
-    });
-  }
+cargar(): void {
+  this.cargando = true;
+  this.clienteService.buscar(this.terminoBusqueda, this.estadoSeleccionado).subscribe({
+    next: d => {
+      this.clientes.data = d;
+      this.cargando = false;
+    },
+    error: () => {
+      this.snackBar.open('Error al cargar clientes', 'Cerrar', { duration: 3000 });
+      this.cargando = false;
+    }
+  });
+}
 
   onBusquedaChange(): void {
     this.busqueda$.next(this.terminoBusqueda);
@@ -68,7 +87,7 @@ export class ListaClientesComponent implements OnInit {
   }
 
   verPerfil(cc: number): void {
-    this.router.navigate(['/clientes', cc]);
+    this.navegacion.perfilCliente(cc);
   }
 
   abrirRegistroCompleto(): void {
@@ -89,13 +108,19 @@ export class ListaClientesComponent implements OnInit {
     }
   }
 
-  eliminar(cliente: ClienteResumenDTO): void {
-    if (!confirm(`¿Eliminar a ${cliente.nombreCompleto}?`)) return;
-    this.clienteService.delete(cliente.cc).subscribe({
-      next: () => { this.snackBar.open('Cliente eliminado', 'Cerrar', { duration: 3000 }); this.cargar(); },
-      error: () => this.snackBar.open('Error al eliminar', 'Cerrar', { duration: 3000 })
-    });
-  }
+ eliminar(cliente: ClienteResumenDTO): void {
+  if (!confirm(`¿Desactivar a ${cliente.nombreCompleto}? El cliente no aparecerá en las listas pero sus facturas se conservarán.`)) return;
+  this.clienteService.delete(cliente.cc).subscribe({
+    next: () => {
+      this.snackBar.open(`${cliente.nombreCompleto} fue desactivado`, 'Cerrar', { duration: 3000 });
+      this.cargar();
+    },
+    error: (e) => {
+      const msg = e.error?.mensaje ?? 'Error al desactivar el cliente';
+      this.snackBar.open(msg, 'Cerrar', { duration: 4000 });
+    }
+  });
+}
 
   // ── Helpers de estado ─────────────────────────────────────────────────
   getEstadoClass(estado: string): string {
@@ -120,11 +145,11 @@ export class ListaClientesComponent implements OnInit {
     return 'dias-vencido';
   }
 
-  get conteoEstados() {
-    return {
-      activos:   this.clientes.filter(c => c.estado === 'ACTIVO').length,
-      agotados:  this.clientes.filter(c => c.estado === 'AGOTADO').length,
-      sinPlan:   this.clientes.filter(c => c.estado === 'SIN_PLAN').length,
-    };
-  }
+ get conteoEstados() {
+  return {
+    activos:  this.clientes.data.filter(c => c.estado === 'ACTIVO').length,
+    agotados: this.clientes.data.filter(c => c.estado === 'AGOTADO').length,
+    sinPlan:  this.clientes.data.filter(c => c.estado === 'SIN_PLAN').length,
+  };
+}
 }

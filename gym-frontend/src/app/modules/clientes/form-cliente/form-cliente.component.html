@@ -33,9 +33,14 @@
 
   <mat-form-field appearance="outline" class="full-width">
     <mat-label>Fecha de nacimiento</mat-label>
-    <input matInput type="date" formControlName="fechaNacimiento">
-    <mat-icon matSuffix>cake</mat-icon>
+    <input matInput [matDatepicker]="pickerNacimiento" formControlName="fechaNacimiento"
+           placeholder="dd/mm/aaaa" [max]="hoy">
+    <mat-datepicker-toggle matIconSuffix [for]="pickerNacimiento">
+      <mat-icon matDatepickerToggleIcon>cake</mat-icon>
+    </mat-datepicker-toggle>
+    <mat-datepicker #pickerNacimiento startView="multi-year" [startAt]="inicioCalendario"></mat-datepicker>
     <mat-hint>Opcional — para el control de cumpleaños</mat-hint>
+    <mat-error>Fecha inválida</mat-error>
   </mat-form-field>
 
   <div class="two-col">

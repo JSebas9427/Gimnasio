@@ -44,6 +44,7 @@ export interface DetalleFactura {
 export interface Factura {
   idFactura?: number;
   tipo: TipoFactura;
+  nombrePersona?: string;  // entreno diario
   cliente?: { cc: number };
   plan?: { idPlan: number };
   vendedor: { cc: number };
@@ -52,4 +53,12 @@ export interface Factura {
   fechaInicio?: string;
   fechaFin?: string;
   detalles: DetalleFactura[];
+}
+
+// ── Método de pago ────────────────────────────────────
+export interface MetodoPago {
+  idMetodoPago?: number;
+  nombre: string;
+  descripcion?: string;
+  activo: boolean;
 }

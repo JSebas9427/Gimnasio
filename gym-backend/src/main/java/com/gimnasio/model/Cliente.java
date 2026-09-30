@@ -51,8 +51,11 @@ public class Cliente {
     @Column(name = "correo", length = 50)
     private String correo;
 
+    @Column(name = "activo", nullable = false)
+    private Integer activo;
     @PrePersist
     public void prePersist() {
         if (this.fechaRegistro == null) this.fechaRegistro = LocalDateTime.now();
+        if (this.activo == null) this.activo = 1;
     }
 }

@@ -2,10 +2,14 @@ import { Component, Inject, OnInit, Optional } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { forkJoin } from 'rxjs';
 import { FacturaService } from '../../../core/services/factura.service';
 import { PlanService } from '../../../core/services/plan.service';
 import { VendedorService } from '../../../core/services/vendedor.service';
+import { MetodoPagoService } from '../../../core/services/metodo-pago.service';
+import { NavegacionService } from '../../../core/services/navegacion.service';
 import { Plan, Vendedor } from '../../../core/models/models';
+import { hoy, parseApiDate, sumarDias, toApiDate } from '../../../core/utils/fechas';
 
 @Component({
   selector: 'app-form-factura',
@@ -17,18 +21,19 @@ export class FormFacturaComponent implements OnInit {
   form!: FormGroup;
   planes: Plan[] = [];
   vendedores: Vendedor[] = [];
-  metodosPago = ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'NEQUI'];
+  metodosPago: string[] = [];
   ccPreseleccionado: number | null = null;
   guardando = false;
-
-  private hoy = new Date();
-  private en30 = new Date(this.hoy.getTime() + 30 * 24 * 60 * 60 * 1000);
+  esEdicion = false;
+  facturaId: number | null = null;
 
   constructor(
     private fb: FormBuilder,
     private facturaService: FacturaService,
     private planService: PlanService,
     private vendedorService: VendedorService,
+    private metodoPagoService: MetodoPagoService,
+    private navegacion: NavegacionService,
     private snackBar: MatSnackBar,
     private ref: MatDialogRef<FormFacturaComponent>,
     @Optional() @Inject(MAT_DIALOG_DATA) public data: any
@@ -38,21 +43,43 @@ export class FormFacturaComponent implements OnInit {
     if (this.data?.ccPreseleccionado) {
       this.ccPreseleccionado = this.data.ccPreseleccionado;
     }
-
-    this.planService.getAll().subscribe(d => this.planes = d);
-    this.vendedorService.getAll().subscribe(d => this.vendedores = d);
+    if (this.data?.factura) {
+      this.esEdicion = true;
+      this.facturaId = this.data.factura.idFactura;
+    }
 
     this.form = this.fb.group({
-      tipo: ['MENSUALIDAD', Validators.required],
-      ccVendedor: ['', Validators.required],
-      ccCliente: [this.ccPreseleccionado ?? ''],
-      idPlan: [''],
-      metodoPago: ['EFECTIVO'],
-      fechaInicio: [this.toInputDate(this.hoy)],
-      fechaFin: [this.toInputDate(this.en30)],
+      tipo:          ['MENSUALIDAD', Validators.required],
+      ccVendedor:    [this.data?.ccVendedorPreseleccionado ?? '', Validators.required],
+      ccCliente:     [this.ccPreseleccionado ?? ''],
+      nombrePersona: ['', Validators.maxLength(60)],
+      idPlan:        [''],
+      metodoPago:    ['', Validators.required],
+      fechaInicio:   [hoy()],
+      fechaFin:      [sumarDias(hoy(), 30)],
       valorEsperado: [{ value: '', disabled: true }],
-      valorPagado: [''],
-      descripcion: ['Entreno diario'],
+      valorPagado:   [''],
+      descripcion:   ['Entreno diario'],
+    });
+
+    forkJoin({
+      planes:      this.planService.getAll(),
+      vendedores:  this.vendedorService.getAll(),
+      metodosPago: this.metodoPagoService.getActivos(),
+    }).subscribe({
+      next: ({ planes, vendedores, metodosPago }) => {
+        this.planes = planes;
+        this.vendedores = vendedores;
+        this.metodosPago = metodosPago.map(m => m.nombre);
+
+        if (this.esEdicion) {
+          this.prellenarFormulario();
+        } else if (this.metodosPago.length) {
+          const porDefecto = this.metodosPago.includes('EFECTIVO') ? 'EFECTIVO' : this.metodosPago[0];
+          this.form.get('metodoPago')!.setValue(porDefecto);
+        }
+      },
+      error: () => this.snackBar.open('Error al cargar planes, vendedores o métodos de pago', 'Cerrar', { duration: 4000 })
     });
 
     // Cuando cambia el plan → actualizar valor esperado y fechas
@@ -63,21 +90,14 @@ export class FormFacturaComponent implements OnInit {
         if (!this.form.get('valorPagado')!.value) {
           this.form.get('valorPagado')!.setValue(plan.precio);
         }
-        const inicio = new Date(this.form.get('fechaInicio')!.value);
-        const fin = new Date(inicio.getTime() + plan.duracion * 24 * 60 * 60 * 1000);
-        this.form.get('fechaFin')!.setValue(this.toInputDate(fin));
+        this.recalcularFechaFin(plan);
       }
     });
 
     // Cuando cambia fecha inicio → recalcular fecha fin
-    this.form.get('fechaInicio')!.valueChanges.subscribe(fecha => {
-      const idPlan = this.form.get('idPlan')!.value;
-      const plan = this.planes.find(p => p.idPlan === idPlan);
-      if (plan && fecha) {
-        const inicio = new Date(fecha);
-        const fin = new Date(inicio.getTime() + plan.duracion * 24 * 60 * 60 * 1000);
-        this.form.get('fechaFin')!.setValue(this.toInputDate(fin), { emitEvent: false });
-      }
+    this.form.get('fechaInicio')!.valueChanges.subscribe(() => {
+      const plan = this.planSeleccionado;
+      if (plan) this.recalcularFechaFin(plan);
     });
 
     // Ajustar validadores según tipo
@@ -86,17 +106,26 @@ export class FormFacturaComponent implements OnInit {
       if (tipo === 'MENSUALIDAD') {
         c['ccCliente'].setValidators(Validators.required);
         c['idPlan'].setValidators(Validators.required);
+        c['nombrePersona'].setValidators(Validators.maxLength(60));
         c['valorPagado'].setValidators([Validators.required, Validators.min(0)]);
       } else {
         c['ccCliente'].clearValidators();
         c['idPlan'].clearValidators();
+        c['nombrePersona'].setValidators([Validators.required, Validators.maxLength(60)]);
         c['valorPagado'].setValidators([Validators.required, Validators.min(1)]);
         this.form.get('valorEsperado')!.setValue('');
       }
-      Object.values(c).forEach(ctrl => ctrl.updateValueAndValidity());
+      Object.values(c).forEach(ctrl => ctrl.updateValueAndValidity({ emitEvent: false }));
     });
 
     this.form.get('tipo')!.updateValueAndValidity();
+  }
+
+  private recalcularFechaFin(plan: Plan): void {
+    const inicio: Date | null = this.form.get('fechaInicio')!.value;
+    if (inicio) {
+      this.form.get('fechaFin')!.setValue(sumarDias(inicio, plan.duracion), { emitEvent: false });
+    }
   }
 
   // ── Getters ───────────────────────────────────────────────────────────
@@ -135,8 +164,33 @@ export class FormFacturaComponent implements OnInit {
     return Math.round((this.montoDescuento / esperado) * 100);
   }
 
-  // ── Guardar ───────────────────────────────────────────────────────────
+  private prellenarFormulario(): void {
+    const f = this.data.factura;
+    if (!f) return;
 
+    // Si la factura usa un método que ya fue desactivado, se mantiene como opción
+    if (f.metodoPago && !this.metodosPago.includes(f.metodoPago)) {
+      this.metodosPago = [...this.metodosPago, f.metodoPago];
+    }
+
+    this.form.patchValue({
+      tipo:          f.tipo,
+      ccVendedor:    f.vendedor?.cc ?? '',
+      ccCliente:     f.cliente?.cc  ?? '',
+      nombrePersona: f.nombrePersona ?? '',
+      idPlan:        f.plan?.idPlan  ?? '',
+      metodoPago:    f.metodoPago   ?? '',
+      fechaInicio:   parseApiDate(f.fechaInicio),
+      fechaFin:      parseApiDate(f.fechaFin),
+      valorEsperado: f.detalles?.[0]?.valorEsperado ?? '',
+      valorPagado:   f.detalles?.[0]?.valorPagado   ?? '',
+      descripcion:   f.detalles?.[0]?.descripcion   ?? 'Entreno diario',
+    });
+    // patchValue de fechaInicio recalcula fechaFin: se restaura la guardada
+    this.form.get('fechaFin')!.setValue(parseApiDate(f.fechaFin), { emitEvent: false });
+  }
+
+  // ── Guardar ───────────────────────────────────────────────────────────
 
   guardar(): void {
     if (this.form.invalid || this.guardando) return;
@@ -144,45 +198,53 @@ export class FormFacturaComponent implements OnInit {
     const v = this.form.getRawValue();
 
     const factura: any = {
-      tipo: v.tipo,
-      vendedor: { cc: Number(v.ccVendedor) },
-      metodoPago: v.metodoPago || null,
-      cliente: v.ccCliente ? { cc: Number(v.ccCliente) } : null,
-      plan: v.idPlan ? { idPlan: Number(v.idPlan) } : null,
-      fechaInicio: v.fechaInicio || null,
-      fechaFin: v.fechaFin || null,
+      tipo:          v.tipo,
+      vendedor:      { cc: Number(v.ccVendedor) },
+      metodoPago:    v.metodoPago || null,
+      cliente:       this.esMensualidad && v.ccCliente ? { cc: Number(v.ccCliente) } : null,
+      nombrePersona: this.esMensualidad ? null : String(v.nombrePersona).trim(),
+      plan:          this.esMensualidad && v.idPlan ? { idPlan: Number(v.idPlan) } : null,
+      fechaInicio:   this.esMensualidad ? toApiDate(v.fechaInicio) : null,
+      fechaFin:      this.esMensualidad ? toApiDate(v.fechaFin) : null,
       detalles: [{
-        descripcion: this.esMensualidad
+        descripcion:   this.esMensualidad
           ? `Mensualidad - ${this.planSeleccionado?.nombre ?? ''}`
           : (v.descripcion || 'Entreno diario'),
         valorEsperado: this.esMensualidad ? Number(v.valorEsperado) : Number(v.valorPagado),
-        valorPagado: Number(v.valorPagado)
+        valorPagado:   Number(v.valorPagado)
       }]
     };
 
-    this.facturaService.create(factura).subscribe({
-      next: () => {
-        this.snackBar.open('Factura registrada correctamente', 'Cerrar', { duration: 2500 });
+    // Al crear, la factura detallada se abre en una pestaña nueva.
+    // Se reserva aquí (en el clic) para que el navegador no la bloquee.
+    const pestana = this.esEdicion ? null : this.navegacion.reservarPestana();
+
+    const operacion = this.esEdicion
+      ? this.facturaService.update(this.facturaId!, factura)
+      : this.facturaService.create(factura);
+
+    operacion.subscribe({
+      next: (guardada) => {
+        this.snackBar.open(
+          this.esEdicion ? 'Factura actualizada correctamente' : 'Factura registrada correctamente',
+          'Cerrar', { duration: 2500 }
+        );
+        if (pestana && guardada?.idFactura) pestana.abrir(['/facturas', guardada.idFactura]);
         this.ref.close(true);
       },
       error: (e) => {
-        this.guardando = false;  // solo rehabilita si hay error
-        this.snackBar.open(e.error?.mensaje ?? 'Error al registrar', 'Cerrar', { duration: 4000 });
+        pestana?.cerrar();
+        this.guardando = false;
+        this.snackBar.open(e.error?.mensaje ?? 'Error al guardar', 'Cerrar', { duration: 4000 });
       }
     });
   }
+
   cancelar(): void { this.ref.close(false); }
 
   formatCOP(valor: any): string {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency', currency: 'COP', minimumFractionDigits: 0
     }).format(Number(valor) || 0);
-  }
-
-  private toInputDate(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
   }
 }

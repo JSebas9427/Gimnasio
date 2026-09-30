@@ -28,4 +28,7 @@ public class ReporteResumenDTO {
     private BigDecimal totalTarjeta;
     private BigDecimal totalTransferencia;
     private BigDecimal totalNequi;
+
+    // Todos los métodos (incluye los creados desde el CRUD de métodos de pago)
+    private java.util.List<ReporteMetodoPagoDTO> totalesPorMetodo;
 }

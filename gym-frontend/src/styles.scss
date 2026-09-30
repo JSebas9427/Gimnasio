@@ -5,3 +5,10 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 * { box-sizing: border-box; }
 body { margin: 0; font-family: Roboto, sans-serif; }
 mat-dialog-content { padding-top: 8px !important; }
+/* Impresión (factura detallada): solo se imprime el contenido de la página */
+@media print {
+  mat-toolbar, .mat-toolbar, mat-sidenav, .mat-sidenav { display: none !important; }
+  .mat-sidenav-content { margin-left: 0 !important; }
+  .mat-sidenav-container, .mat-sidenav-content { height: auto !important; overflow: visible !important; margin-top: 0 !important; }
+  .content { padding: 0 !important; background: #fff !important; }
+}

@@ -196,3 +196,11 @@ mat-card mat-card-content {
 .mono { font-family: monospace; font-size: 0.88rem; }
 .color-ok   { color: #2e7d32; }
 .color-deny { color: #c62828; }
+
+.perfil-link {
+  color: #3f51b5;
+  cursor: pointer;
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}
+.met-icon.otro { color: #607d8b; }

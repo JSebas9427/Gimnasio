@@ -134,6 +134,19 @@ public class DashboardService {
         if (clienteOpt.isEmpty()) return null;
 
         Cliente cliente = clienteOpt.get();
+
+        // Cliente eliminado (soft delete) → no puede ingresar aunque tenga plan vigente
+        if (cliente.getActivo() != null && cliente.getActivo() == 0) {
+            return ClienteBusquedaRapidaDTO.builder()
+                    .cc(cliente.getCc())
+                    .nombreCompleto(cliente.getNombre1() + " " + cliente.getApellido1())
+                    .telefono(cliente.getTelefono())
+                    .tipoPersona("CLIENTE")
+                    .estado("INACTIVO")
+                    .accesoPermitido(false)
+                    .motivoDenegacion("Cliente desactivado en el sistema")
+                    .build();
+        }
         List<Factura> mensualidades = facturaRepository.findUltimaMensualidadByCliente(cc);
         Factura ultima = mensualidades.isEmpty() ? null : mensualidades.get(0);
 

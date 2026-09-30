@@ -15,9 +15,9 @@
 <!-- Buscador -->
 <div class="buscador-wrap">
   <mat-form-field appearance="outline" class="buscador-field">
-    <mat-label>Buscar por cédula, nombre o apellido</mat-label>
+    <mat-label>Buscar por nombre, apellido o cédula (se pueden combinar)</mat-label>
     <input matInput [(ngModel)]="terminoBusqueda" (ngModelChange)="onBusquedaChange()"
-           placeholder="Ej: Juan, García, 1234...">
+           placeholder="Ej: Juan, García, Juan García, 1234...">
     <mat-icon matPrefix>search</mat-icon>
     <button matSuffix mat-icon-button *ngIf="terminoBusqueda"
             (click)="terminoBusqueda=''; cargar()">
@@ -43,13 +43,13 @@
 </div>
 
 <!-- Tabla -->
-<mat-card *ngIf="!cargando">
+<mat-card [hidden]="cargando">
   <mat-card-content>
-    <table mat-table [dataSource]="clientes" class="full-width">
+    <table mat-table [dataSource]="clientes" matSort class="full-width">
 
       <!-- Estado -->
       <ng-container matColumnDef="estado">
-        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Estado</th>
         <td mat-cell *matCellDef="let c">
           <span [class]="'estado-badge ' + getEstadoClass(c.estado)">
             {{ getEstadoLabel(c.estado) }}
@@ -59,13 +59,13 @@
 
       <!-- CC -->
       <ng-container matColumnDef="cc">
-        <th mat-header-cell *matHeaderCellDef>CC</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>CC</th>
         <td mat-cell *matCellDef="let c">{{ c.cc }}</td>
       </ng-container>
 
       <!-- Nombre -->
       <ng-container matColumnDef="nombreCompleto">
-        <th mat-header-cell *matHeaderCellDef>Nombre</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Nombre</th>
         <td mat-cell *matCellDef="let c">
           <button class="nombre-link" (click)="verPerfil(c.cc)">
             {{ c.nombreCompleto }}
@@ -81,19 +81,19 @@
 
       <!-- Plan -->
       <ng-container matColumnDef="ultimoPlan">
-        <th mat-header-cell *matHeaderCellDef>Plan</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Plan</th>
         <td mat-cell *matCellDef="let c">{{ c.ultimoPlan || '—' }}</td>
       </ng-container>
 
       <!-- Vence -->
       <ng-container matColumnDef="ultimaFechaFin">
-        <th mat-header-cell *matHeaderCellDef>Vence</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Vence</th>
         <td mat-cell *matCellDef="let c">{{ c.ultimaFechaFin | date:'dd/MM/yyyy' }}</td>
       </ng-container>
 
       <!-- Días -->
       <ng-container matColumnDef="diasRestantes">
-        <th mat-header-cell *matHeaderCellDef>Días</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Días</th>
         <td mat-cell *matCellDef="let c">
           <span [class]="getDiasClass(c.diasRestantes)">
             {{ getDiasLabel(c.diasRestantes) }}
@@ -120,8 +120,11 @@
       <tr mat-header-row *matHeaderRowDef="columnas"></tr>
       <tr mat-row *matRowDef="let row; columns: columnas;"></tr>
     </table>
-
-    <div class="empty" *ngIf="clientes.length === 0">
+    <mat-paginator [pageSizeOptions]="[5, 25, 100]"
+               pageSize="10"
+               showFirstLastButtons>
+</mat-paginator>
+    <div class="empty" *ngIf="clientes.data.length === 0">
       <mat-icon>person_search</mat-icon>
       <span>No se encontraron clientes</span>
     </div>

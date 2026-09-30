@@ -6,7 +6,9 @@ import com.gimnasio.dto.FacturaResponseDTO;
 import com.gimnasio.model.Cliente;
 import com.gimnasio.model.Factura;
 import com.gimnasio.model.enums.TipoFactura;
+import com.gimnasio.repository.BusquedaSpecs;
 import com.gimnasio.repository.ClienteRepository;
+import org.springframework.data.domain.Sort;
 import com.gimnasio.repository.FacturaRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +32,9 @@ public class ClienteService {
     // ── CRUD base ─────────────────────────────────────────────────────────
 
     public List<Cliente> findAll() {
-        return clienteRepository.findAll();
+        return clienteRepository.findAll().stream()
+                .filter(c -> c.getActivo() == null || c.getActivo() == 1)
+                .collect(Collectors.toList());
     }
 
     public Cliente findById(Integer cc) {
@@ -52,13 +56,21 @@ public class ClienteService {
         cliente.setApellido2(clienteActualizado.getApellido2());
         cliente.setTelefono(clienteActualizado.getTelefono());
         cliente.setCorreo(clienteActualizado.getCorreo());
+        cliente.setFechaNacimiento(clienteActualizado.getFechaNacimiento());
         return clienteRepository.save(cliente);
     }
 
     public void delete(Integer cc) {
-        if (!clienteRepository.existsById(cc))
-            throw new EntityNotFoundException("Cliente no encontrado con CC: " + cc);
-        clienteRepository.deleteById(cc);
+        Cliente cliente = clienteRepository.findById(cc)
+                .orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado con CC: " + cc));
+        cliente.setActivo(0);
+        clienteRepository.save(cliente);
+    }
+    public void reactivar(Integer cc) {
+        Cliente cliente = clienteRepository.findById(cc)
+                .orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado con CC: " + cc));
+        cliente.setActivo(1);
+        clienteRepository.save(cliente);
     }
 
     // ── Lista con estado calculado ────────────────────────────────────────
@@ -66,22 +78,22 @@ public class ClienteService {
     @Transactional(readOnly = true)
     public List<ClienteResumenDTO> findAllConEstado() {
         return clienteRepository.findAll().stream()
+                .filter(c -> c.getActivo() == null || c.getActivo() == 1)
                 .map(this::toResumen)
                 .collect(Collectors.toList());
     }
-
     // ── Búsqueda + filtro por estado ──────────────────────────────────────
 
     @Transactional(readOnly = true)
     public List<ClienteResumenDTO> buscar(String q, String estado) {
-        List<Cliente> clientes = (q != null && !q.isBlank())
-                ? clienteRepository.buscar(q.trim())
-                : clienteRepository.findAll();
+        // Nombre + apellido, nombre, apellido o cédula, en cualquier orden (ver BusquedaSpecs)
+        List<Cliente> clientes = clienteRepository.findAll(
+                BusquedaSpecs.clientes(q), Sort.by("apellido1", "nombre1"));
 
         return clientes.stream()
                 .map(this::toResumen)
                 .filter(r -> estado == null || estado.isBlank() || estado.equalsIgnoreCase("TODOS")
-                          || r.getEstado().equalsIgnoreCase(estado))
+                        || r.getEstado().equalsIgnoreCase(estado))
                 .collect(Collectors.toList());
     }
 

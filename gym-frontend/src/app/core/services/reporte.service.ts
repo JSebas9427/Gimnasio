@@ -15,6 +15,7 @@ export interface ReporteResumenDTO {
   totalTarjeta: number;
   totalTransferencia: number;
   totalNequi: number;
+  totalesPorMetodo: { metodoPago: string; total: number }[];
 }
 
 export interface ReporteIngresoDTO {

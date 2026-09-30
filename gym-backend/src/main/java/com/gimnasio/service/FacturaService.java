@@ -9,6 +9,7 @@ import com.gimnasio.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,13 +55,15 @@ public class FacturaService {
     }
 
     // ── Búsqueda combinada: término + mes/año ─────────────────────────────
-    // q     = número de factura, CC cliente o CC vendedor (vacío = todos)
+    // q     = palabras a buscar en # factura, CC/nombre/apellido del cliente, CC/nombre
+    //         del vendedor o nombre del entreno diario (vacío = todos). Ver BusquedaSpecs.
     // mes   = 0 → sin filtro de mes
     // anio  = 0 → sin filtro de año
     @Transactional(readOnly = true)
     public List<FacturaResponseDTO> buscar(String q, int mes, int anio) {
-        String termino = (q == null || q.isBlank()) ? "" : q.trim();
-        List<Factura> facturas = facturaRepository.buscarConFiltro(termino, mes, anio);
+        List<Factura> facturas = facturaRepository.findAll(
+                BusquedaSpecs.facturas(q, mes, anio),
+                Sort.by(Sort.Order.desc("fechaFactura"), Sort.Order.desc("idFactura")));
         return facturas.stream().map(FacturaResponseDTO::from).collect(Collectors.toList());
     }
 
@@ -97,6 +100,9 @@ public class FacturaService {
                     detalle.setValorEsperado(plan.getPrecio());
                 }
             }
+            factura.setNombrePersona(null);
+        } else {
+            factura.setNombrePersona(factura.getNombrePersona().trim());
         }
 
         factura.setFechaFactura(LocalDate.now());
@@ -117,6 +123,71 @@ public class FacturaService {
 
         return FacturaResponseDTO.from(guardada);
     }
+    public FacturaResponseDTO update(Integer id, Factura request) {
+        Factura factura = facturaRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Factura no encontrada: " + id));
+
+        if (request.getTipo() == TipoFactura.DIARIO
+                && (request.getNombrePersona() == null || request.getNombrePersona().isBlank()))
+            throw new IllegalArgumentException("Un entreno diario requiere el nombre de la persona");
+
+        // Actualizar campos básicos
+        factura.setTipo(request.getTipo());
+        factura.setMetodoPago(request.getMetodoPago());
+        factura.setFechaInicio(request.getFechaInicio());
+        factura.setFechaFin(request.getFechaFin());
+        factura.setNombrePersona(request.getTipo() == TipoFactura.DIARIO
+                ? request.getNombrePersona().trim() : null);
+
+        // Actualizar vendedor
+        if (request.getVendedor() != null && request.getVendedor().getCc() != null) {
+            // Se asigna la entidad cargada (no el objeto del request, que solo trae la CC)
+            factura.setVendedor(vendedorRepository.findById(request.getVendedor().getCc())
+                    .orElseThrow(() -> new EntityNotFoundException("Vendedor no encontrado")));
+        }
+
+        // Actualizar cliente
+        if (request.getCliente() != null && request.getCliente().getCc() != null) {
+            factura.setCliente(clienteRepository.findById(request.getCliente().getCc())
+                    .orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado")));
+        } else {
+            factura.setCliente(null);
+        }
+
+        // Actualizar plan y recalcular valor esperado en detalles existentes de la BD
+        if (request.getPlan() != null && request.getPlan().getIdPlan() != null) {
+            Plan plan = planRepository.findById(request.getPlan().getIdPlan())
+                    .orElseThrow(() -> new EntityNotFoundException("Plan no encontrado"));
+            factura.setPlan(plan);
+
+            // Buscar detalles reales de la BD y actualizar valor esperado
+            List<DetalleFactura> detallesBD = detalleFacturaRepository.findByFactura_IdFactura(id);
+            for (DetalleFactura detalle : detallesBD) {
+                detalle.setValorEsperado(plan.getPrecio());
+                // Si viene valor pagado en el request, actualizarlo
+                if (request.getDetalles() != null && !request.getDetalles().isEmpty()) {
+                    detalle.setValorPagado(request.getDetalles().get(0).getValorPagado());
+                }
+            }
+            detalleFacturaRepository.saveAll(detallesBD);
+        } else {
+            factura.setPlan(null);
+            // Sin plan (entreno diario) — el valor esperado es lo mismo que se pagó
+            if (request.getDetalles() != null && !request.getDetalles().isEmpty()) {
+                DetalleFactura nuevo = request.getDetalles().get(0);
+                List<DetalleFactura> detallesBD = detalleFacturaRepository.findByFactura_IdFactura(id);
+                for (DetalleFactura detalle : detallesBD) {
+                    detalle.setValorPagado(nuevo.getValorPagado());
+                    detalle.setValorEsperado(nuevo.getValorPagado());
+                    if (nuevo.getDescripcion() != null) detalle.setDescripcion(nuevo.getDescripcion());
+                }
+                detalleFacturaRepository.saveAll(detallesBD);
+            }
+        }
+
+        Factura actualizada = facturaRepository.save(factura);
+        return FacturaResponseDTO.from(actualizada);
+    }
 
     public void delete(Integer id) {
         if (!facturaRepository.existsById(id))
@@ -136,6 +207,8 @@ public class FacturaService {
         if (factura.getTipo() == TipoFactura.DIARIO) {
             if (factura.getDetalles() == null || factura.getDetalles().isEmpty())
                 throw new IllegalArgumentException("Un entreno diario requiere al menos un detalle");
+            if (factura.getNombrePersona() == null || factura.getNombrePersona().isBlank())
+                throw new IllegalArgumentException("Un entreno diario requiere el nombre de la persona");
         }
     }
 }

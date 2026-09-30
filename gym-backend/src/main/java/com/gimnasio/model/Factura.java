@@ -34,6 +34,11 @@ public class Factura {
     @JoinColumn(name = "cc_vendedor", nullable = false)
     private Vendedor vendedor;
 
+    // Nombre de la persona en un entreno diario (no tiene cliente registrado)
+    @Size(max = 60)
+    @Column(name = "nombre_persona", length = 60)
+    private String nombrePersona;
+
     @Size(max = 20)
     @Column(name = "metodo_pago", length = 20)
     private String metodoPago;
