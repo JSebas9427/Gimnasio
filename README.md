@@ -1,4 +1,4 @@
-# Ethos Gym — Sistema de gestión de gimnasio
+# GymSystem — Sistema de gestión de gimnasio
 
 Aplicación web para administrar un gimnasio: clientes, empleados (vendedores), planes,
 facturación (mensualidades y entrenos diarios), métodos de pago, control de acceso con
